@@ -67,7 +67,7 @@ export function NoteForm({ action }: NoteFormProps) {
           {isPending ? <Spinner /> : null}
           {isPending ? "Сохраняю…" : "Добавить заметку"}
         </Button>
-        <span className="hidden text-xs text-muted-foreground sm:inline">или ⌘ + Enter</span>
+        <span className="hidden text-13 text-ink-faint sm:inline">или ⌘ + Enter</span>
       </div>
     </form>
   );

@@ -107,7 +107,7 @@ export function ContactForm({ action, defaultValues, submitLabel, cancelHref }: 
         </div>
       </FieldGroup>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-3">
         <Button type="submit" size="lg" disabled={isPending}>
           {isPending ? <Spinner /> : null}
           {isPending ? "Сохраняю…" : submitLabel}

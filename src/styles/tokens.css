@@ -1,0 +1,77 @@
+/* Design tokens (Tailwind CSS 4), shared with the landing: personal-crm-landing/src/styles/tokens.css.
+   The only place for colors, fonts, type sizes, line heights, shadows and radii.
+   Spacing uses Tailwind's 4px scale (--spacing), e.g. p-5.5 = 22px. */
+
+@theme {
+  /* Colors: only the design palette, Tailwind defaults are removed */
+  --color-*: initial;
+  --color-ink: #241A3A;          /* main text, borders, hard shadows, dark buttons */
+  --color-ink-deep: #000000;     /* inner bottom-right bevel of dark buttons, button hover */
+  --color-ink-soft: #463A5E;     /* body copy on light */
+  --color-ink-muted: #5A4E72;    /* secondary copy */
+  --color-ink-faint: #6A5A8C;    /* captions, small pixel labels, placeholders */
+  --color-bevel: #5A4A80;        /* inner top-left bevel of dark buttons */
+
+  --color-paper: #F1EAFF;        /* page background (lavender), hover on white */
+  --color-grid: #DCCFFA;         /* background grid lines */
+  --color-white: #FFFFFF;        /* window bodies, fields */
+
+  --color-accent: #FF8FC7;       /* pink: window title bars, icons on dark buttons */
+  --color-lilac: #C9B6FF;        /* secondary title bars, dashed dividers */
+  --color-violet: #7B4FE0;       /* focus outline, links */
+  --color-butter: #FFF4B0;       /* "card" title bar, highlight of a just added contact */
+
+  --color-danger: #C2185B;       /* app only: errors in forms, 5.9:1 on white */
+
+  /* Type sizes in px of the layout (text-15 = 15px), Tailwind defaults are removed */
+  --text-*: initial;
+  --text-8: 0.5rem;
+  --text-9: 0.5625rem;
+  --text-10: 0.625rem;
+  --text-11: 0.6875rem;
+  --text-12: 0.75rem;
+  --text-13: 0.8125rem;
+  --text-14: 0.875rem;
+  --text-15: 0.9375rem;
+  --text-16: 1rem;
+  --text-18: 1.125rem;
+  --text-20: 1.25rem;
+  --text-22: 1.375rem;
+  --text-26: 1.625rem;
+  --text-30: 1.875rem;
+  --text-38: 2.375rem;
+  --text-44: 2.75rem;
+
+  /* Line heights */
+  --leading-heading: 1.12;       /* display headings */
+  --leading-body: 1.5;           /* paragraphs, notes */
+  --leading-card: 1.45;          /* compact copy */
+
+  /* Hard pixel shadows (no blur) */
+  --shadow-*: initial;
+  --shadow-px-sm: 3px 3px 0 var(--color-ink);
+  --shadow-px: 4px 4px 0 var(--color-ink);
+  --shadow-px-md: 6px 6px 0 var(--color-ink);
+  --shadow-px-lg: 8px 8px 0 var(--color-ink);
+  /* Retro bevel for dark buttons */
+  --shadow-bevel: inset -4px -4px 0 var(--color-ink-deep), inset 4px 4px 0 var(--color-bevel);
+
+  --radius-*: initial;           /* everything is square: no rounded corners anywhere */
+}
+
+/* Fonts come from next/font in src/app/layout.tsx as CSS variables */
+@theme inline {
+  --font-sans: var(--font-golos-text), system-ui, sans-serif;  /* body */
+  --font-display: var(--font-rubik-mono-one), monospace;       /* page headings, always uppercase */
+  --font-pixel: var(--font-press-start-2p), monospace;         /* logo, buttons, window titles, labels */
+}
+
+/* Light page grid: 26px cells on phones, 32px from md up */
+@utility bg-grid-light {
+  background-color: var(--color-paper);
+  background-image:
+    linear-gradient(var(--color-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+  background-size: 26px 26px;
+  @media (width >= 48rem) { background-size: 32px 32px; }
+}

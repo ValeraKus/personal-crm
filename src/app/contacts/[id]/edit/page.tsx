@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { updateContact } from "@/app/actions";
 import { BackLink } from "@/components/back-link";
 import { ContactForm } from "@/components/contact-form";
-import { Card, CardContent } from "@/components/ui/card";
+import { Window } from "@/components/window";
 import { getContact } from "@/db/queries";
 import { parseContactId } from "@/lib/ids";
 
@@ -23,19 +23,19 @@ export default async function EditContactPage({ params }: PageProps<"/contacts/[
   const cardHref = `/contacts/${contact.id}`;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 sm:gap-5">
       <BackLink href={cardHref}>{contact.name}</BackLink>
-      <h1 className="text-2xl font-semibold tracking-tight">Изменить контакт</h1>
-      <Card>
-        <CardContent>
+      <h1 className="font-display text-26 leading-heading uppercase sm:text-38">Изменить контакт</h1>
+      <Window title="карточка" bar="butter" controls={2} className="mt-2">
+        <div className="p-4 sm:p-6">
           <ContactForm
             action={updateContact.bind(null, contact.id)}
             defaultValues={contact}
             submitLabel="Сохранить"
             cancelHref={cardHref}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </Window>
     </div>
   );
 }

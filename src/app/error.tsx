@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Window } from "@/components/window";
 
 export default function ErrorPage({
   error,
@@ -16,16 +17,20 @@ export default function ErrorPage({
   }, [error]);
 
   return (
-    <div className="rounded-xl border border-dashed bg-background px-6 py-12 text-center">
-      <h1 className="text-lg font-semibold">Не получилось загрузить данные</h1>
-      <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-        Скорее всего, не запущена база данных. Запустите её командой{" "}
-        <code className="rounded bg-muted px-1 py-0.5">docker compose up -d</code> и попробуйте
-        снова.
-      </p>
-      <Button className="mt-4" onClick={() => retry()}>
-        Попробовать снова
-      </Button>
-    </div>
+    <Window title="ошибка.exe" bar="accent" controls={2} className="mx-auto w-full max-w-xl">
+      <div className="flex flex-col items-center gap-4 px-5 py-10 text-center sm:px-8">
+        <h1 className="font-display text-18 leading-heading uppercase sm:text-22">
+          Не получилось загрузить данные
+        </h1>
+        <p className="max-w-md text-15 leading-body text-ink-soft">
+          Скорее всего, не запущена база данных. Запустите её командой{" "}
+          <code className="border border-ink bg-paper px-1 py-0.5 text-14">docker compose up -d</code>{" "}
+          и попробуйте снова.
+        </p>
+        <Button className="mt-2" onClick={() => retry()}>
+          Попробовать снова
+        </Button>
+      </div>
+    </Window>
   );
 }

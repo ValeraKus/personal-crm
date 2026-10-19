@@ -1,9 +1,9 @@
 "use client";
 
-import { SearchIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useTransition, type FormEvent } from "react";
 
+import { PixelIcon } from "@/components/pixel-icon";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -39,7 +39,10 @@ export function ContactSearch({ query }: { query: string }) {
 
   return (
     <form role="search" action="/" onSubmit={handleSubmit} className="relative">
-      <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+      <PixelIcon
+        name="search"
+        className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink"
+      />
       <Input
         ref={inputRef}
         type="search"
@@ -48,7 +51,7 @@ export function ContactSearch({ query }: { query: string }) {
         placeholder="Найти по имени"
         aria-label="Найти контакт по имени"
         autoComplete="off"
-        className="h-10 pr-9 pl-9 text-base md:text-sm"
+        className="pr-10 pl-10.5"
         onChange={(event) => {
           const value = event.currentTarget.value;
           clearTimeout(timerRef.current);
@@ -56,7 +59,7 @@ export function ContactSearch({ query }: { query: string }) {
         }}
       />
       {isPending ? (
-        <Spinner className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground" />
+        <Spinner className="absolute top-1/2 right-3.5 -translate-y-1/2 text-ink-faint" />
       ) : null}
     </form>
   );

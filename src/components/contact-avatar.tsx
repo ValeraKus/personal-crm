@@ -1,16 +1,8 @@
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
 
-const COLORS = [
-  "bg-rose-100 text-rose-800",
-  "bg-amber-100 text-amber-800",
-  "bg-lime-100 text-lime-800",
-  "bg-emerald-100 text-emerald-800",
-  "bg-cyan-100 text-cyan-800",
-  "bg-sky-100 text-sky-800",
-  "bg-violet-100 text-violet-800",
-  "bg-fuchsia-100 text-fuchsia-800",
-];
+// Colors of the tags on the landing
+const COLORS = ["bg-accent", "bg-lilac", "bg-butter", "bg-paper"];
 
 // The same person always gets the same color
 function colorFor(name: string) {
@@ -24,7 +16,7 @@ export function ContactAvatar({ name, className }: { name: string; className?: s
     <span
       aria-hidden
       className={cn(
-        "inline-flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
+        "inline-flex size-10 shrink-0 items-center justify-center border-2 border-ink font-pixel text-10 text-ink",
         colorFor(name),
         className,
       )}

@@ -1,0 +1,13 @@
+{
+  // Compiles scripts/ to plain JavaScript for the Docker image: migrations and test data
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "incremental": false,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "rootDir": ".",
+    "outDir": "build/tools"
+  },
+  "include": ["scripts/*.ts"]
+}

@@ -1,0 +1,15 @@
+# Only what the image build needs. Secrets never get into the image.
+.env
+.env.*
+.git
+.github
+.claude
+.next
+node_modules
+build
+deploy
+specs
+*.md
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store

@@ -1,0 +1,66 @@
+# Production stack on the server, docker compose project "prod":
+# - db: PostgreSQL; data in the db-data volume, not reachable from the network
+# - migrate: one-off container from the app image, applies migrations and exits
+# - app: the Next.js server, reachable only from nginx on 127.0.0.1:3000
+# Secrets come from .env next to this file. The app image of the current release is set in
+# compose.override.yaml, which deploy.sh writes; docker compose merges it in automatically.
+name: prod
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+x-app-environment: &app-environment
+  DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is not set in .env}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set in .env}@db:5432/${POSTGRES_DB:?POSTGRES_DB is not set in .env}
+  # Note dates are rendered on the server, in this time zone
+  TZ: Europe/Zurich
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is not set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is not set in .env}
+    volumes:
+      # Postgres 18+ images keep data under /var/lib/postgresql/<major>/docker
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+
+  migrate:
+    # Started only explicitly: docker compose run --rm migrate
+    profiles: [tools]
+    working_dir: /app/tools
+    command: ["node", "scripts/migrate.js"]
+    environment: *app-environment
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *logging
+
+  app:
+    restart: unless-stopped
+    environment: *app-environment
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging: *logging
+
+volumes:
+  db-data:

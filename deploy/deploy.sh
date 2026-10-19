@@ -19,15 +19,19 @@ fi
 log "Pulling $image"
 docker_config=$(mktemp -d)
 trap 'rm -rf "$docker_config"' EXIT
-# Throwaway registry login: the token is valid only while the GitHub Actions job runs
-DOCKER_CONFIG=$docker_config docker login ghcr.io --username "$registry_user" --password-stdin > /dev/null
+# Throwaway registry login: the token is valid only while the GitHub Actions job runs,
+# and the config with it is deleted on exit, so docker's warning about storing it is noise
+if ! login_output=$(DOCKER_CONFIG=$docker_config docker login ghcr.io --username "$registry_user" --password-stdin 2>&1); then
+  printf '%s\n' "$login_output" >&2
+  fail "could not log in to ghcr.io"
+fi
 DOCKER_CONFIG=$docker_config docker pull --quiet "$image"
 
 # The new release becomes current only after its migrations succeed
 write_release next-release.yaml "$image"
 
 log "Starting the database"
-compose -f compose.yaml -f next-release.yaml up -d --wait db
+compose -f compose.yaml -f next-release.yaml up -d --wait --quiet-pull db
 
 log "Applying migrations"
 if ! compose -f compose.yaml -f next-release.yaml run --rm -T migrate; then

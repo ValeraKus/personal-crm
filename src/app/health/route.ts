@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 
-import { db } from "@/db";
+import { getDb } from "@/db";
 
 // Always answer at request time: the deploy smoke check needs the live state
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const version = process.env.APP_VERSION ?? "dev";
   try {
-    await db.execute(sql`select 1`);
+    await getDb().execute(sql`select 1`);
     return Response.json({ status: "ok", version });
   } catch (error) {
     console.error("Health check failed: database is unreachable", error);

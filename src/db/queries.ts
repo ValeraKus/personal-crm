@@ -3,7 +3,7 @@ import "server-only";
 import { and, count, desc, eq, sql, type SQL } from "drizzle-orm";
 import { cache } from "react";
 
-import { db } from "./index";
+import { getDb } from "./index";
 import { contacts, notes } from "./schema";
 
 // Alphabetical order by Russian rules: Cyrillic first, "ё" sorted together with "е"
@@ -32,7 +32,7 @@ function nameSearchCondition(query: string): SQL | undefined {
 }
 
 export async function listContacts(query = "") {
-  return db
+  return getDb()
     .select({
       id: contacts.id,
       name: contacts.name,
@@ -48,18 +48,18 @@ export async function listContacts(query = "") {
 export type ContactListItem = Awaited<ReturnType<typeof listContacts>>[number];
 
 export async function countContacts() {
-  const [row] = await db.select({ total: count() }).from(contacts);
+  const [row] = await getDb().select({ total: count() }).from(contacts);
   return row.total;
 }
 
 // Cached per request: the page and its metadata both read the same contact
 export const getContact = cache(async (id: number) => {
-  const [contact] = await db.select().from(contacts).where(eq(contacts.id, id));
+  const [contact] = await getDb().select().from(contacts).where(eq(contacts.id, id));
   return contact;
 });
 
 export async function listNotes(contactId: number) {
-  return db
+  return getDb()
     .select()
     .from(notes)
     .where(eq(notes.contactId, contactId))

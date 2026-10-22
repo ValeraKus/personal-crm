@@ -14,9 +14,8 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY . .
-# src/db requires DATABASE_URL on import, but the build never connects: all pages are dynamic.
-# The placeholder lives only in this step; the running app gets the real value from the server.
-RUN DATABASE_URL=postgres://build:build@127.0.0.1:5432/build pnpm build
+# Builds without DATABASE_URL: the app connects to the database only when it serves a request
+RUN pnpm build
 # Tools: scripts compiled to JavaScript, migration files and the only packages they need
 RUN pnpm exec tsc -p tsconfig.tools.json \
   && cp -r drizzle build/tools/drizzle \

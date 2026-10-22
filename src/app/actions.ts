@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { z } from "zod";
 
-import { db } from "@/db";
+import { getDb } from "@/db";
+import { dbErrorForLog } from "@/db/errors";
 import { contacts, notes } from "@/db/schema";
 import { parseContactId } from "@/lib/ids";
 import { contactSchema, noteSchema, type ContactField } from "@/lib/validation";
@@ -48,9 +49,9 @@ export async function createContact(
 
   let id: number;
   try {
-    [{ id }] = await db.insert(contacts).values(parsed.data).returning({ id: contacts.id });
+    [{ id }] = await getDb().insert(contacts).values(parsed.data).returning({ id: contacts.id });
   } catch (error) {
-    console.error("Failed to create contact", error);
+    console.error("Failed to create contact", dbErrorForLog(error));
     return { formError: "Не удалось сохранить контакт. Попробуйте ещё раз." };
   }
 
@@ -74,7 +75,7 @@ export async function updateContact(
   }
 
   try {
-    const updated = await db
+    const updated = await getDb()
       .update(contacts)
       .set({ ...parsed.data, updatedAt: new Date() })
       .where(eq(contacts.id, id))
@@ -83,7 +84,7 @@ export async function updateContact(
       return { formError: "Контакт не найден." };
     }
   } catch (error) {
-    console.error("Failed to update contact", error);
+    console.error("Failed to update contact", dbErrorForLog(error));
     return { formError: "Не удалось сохранить изменения. Попробуйте ещё раз." };
   }
 
@@ -108,16 +109,16 @@ export async function addNote(
   }
 
   try {
-    const [contact] = await db
+    const [contact] = await getDb()
       .select({ id: contacts.id })
       .from(contacts)
       .where(eq(contacts.id, contactId));
     if (!contact) {
       return { status: "error", message: "Контакт не найден." };
     }
-    await db.insert(notes).values({ contactId, body: parsed.data.body });
+    await getDb().insert(notes).values({ contactId, body: parsed.data.body });
   } catch (error) {
-    console.error("Failed to add note", error);
+    console.error("Failed to add note", dbErrorForLog(error));
     return { status: "error", message: "Не удалось сохранить заметку. Попробуйте ещё раз." };
   }
 

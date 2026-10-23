@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { addNote } from "@/app/actions";
+import { addNote, deleteContact } from "@/app/actions";
 import { BackLink } from "@/components/back-link";
 import { ContactAvatar } from "@/components/contact-avatar";
+import { DeleteContactButton } from "@/components/delete-contact-button";
 import { NoteForm } from "@/components/note-form";
 import { PixelIcon } from "@/components/pixel-icon";
 import { Button } from "@/components/ui/button";
@@ -50,13 +51,20 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
               <p className="mt-1.5 text-15 text-ink-muted sm:text-16">{contact.about}</p>
             ) : null}
           </div>
-          <Button asChild variant="outline">
-            <Link href={`/contacts/${contact.id}/edit`}>
-              <PixelIcon name="pencil" />
-              <span className="hidden sm:inline">Изменить</span>
-              <span className="sr-only sm:hidden">Изменить контакт</span>
-            </Link>
-          </Button>
+          <div className="flex shrink-0 gap-2 sm:gap-3">
+            <Button asChild variant="outline">
+              <Link href={`/contacts/${contact.id}/edit`}>
+                <PixelIcon name="pencil" />
+                <span className="hidden sm:inline">Изменить</span>
+                <span className="sr-only sm:hidden">Изменить контакт</span>
+              </Link>
+            </Button>
+            <DeleteContactButton
+              action={deleteContact.bind(null, contact.id)}
+              name={contact.name}
+              noteCount={notes.length}
+            />
+          </div>
         </div>
         <dl className="grid gap-x-6 gap-y-4 border-t-2 border-dashed border-lilac p-4 sm:grid-cols-[10rem_1fr] sm:p-6">
           <DetailRow label="Откуда знакомы">

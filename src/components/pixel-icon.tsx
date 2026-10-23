@@ -28,6 +28,11 @@ const ICONS = {
     viewBox: "0 0 8 8",
     path: "M1 0h3v1H1zM0 1h1v3H0zM4 1h1v3H4zM1 4h3v1H1zM5 5h1v1H5zM6 6h1v1H6zM7 7h1v1H7z",
   },
+  // Not on the landing: drawn in the same 7x7 grid
+  trash: {
+    viewBox: "0 0 7 7",
+    path: "M2 0h3v1H2zM0 1h7v1H0zM1 2h1v5H1zM5 2h1v5H5zM2 6h3v1H2zM3 3h1v2H3z",
+  },
 } as const;
 
 export type PixelIconName = keyof typeof ICONS;

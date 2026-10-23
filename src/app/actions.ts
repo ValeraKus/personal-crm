@@ -21,6 +21,11 @@ export type NoteFormState =
   | { status: "error"; message: string }
   | { status: "saved"; savedAt: number };
 
+export type DeleteContactState =
+  | { status: "idle" }
+  | { status: "error"; message: string }
+  | { status: "deleted" };
+
 const CONTACT_FIELDS: ContactField[] = ["name", "about", "howWeMet", "phone", "email"];
 
 function readContactForm(formData: FormData) {
@@ -124,4 +129,24 @@ export async function addNote(
 
   revalidatePath(`/contacts/${contactId}`);
   return { status: "saved", savedAt: Date.now() };
+}
+
+// Notes go away together with the contact: the foreign key deletes them on cascade.
+// No revalidatePath here: it would re-render the current page, the card of the deleted contact,
+// as "not found". The client goes to the list itself, and the list always reads fresh data.
+export async function deleteContact(rawId: number): Promise<DeleteContactState> {
+  const id = parseContactId(rawId);
+  if (id === null) {
+    return { status: "error", message: "Контакт не найден." };
+  }
+
+  try {
+    // Nothing deleted means it is already gone, e.g. deleted in another browser: same result
+    await getDb().delete(contacts).where(eq(contacts.id, id));
+  } catch (error) {
+    console.error("Failed to delete contact", dbErrorForLog(error));
+    return { status: "error", message: "Не удалось удалить контакт. Попробуйте ещё раз." };
+  }
+
+  return { status: "deleted" };
 }

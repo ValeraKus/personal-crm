@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, count, desc, eq, sql, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, max, sql, type SQL } from "drizzle-orm";
 import { cache } from "react";
 
 import { getDb } from "./index";
@@ -64,4 +64,23 @@ export async function listNotes(contactId: number) {
     .from(notes)
     .where(eq(notes.contactId, contactId))
     .orderBy(desc(notes.createdAt), desc(notes.id));
+}
+
+// Contacts with a frequency and the date of the last note, in the order of the general list.
+// Which of them are overdue is decided by getTermStatus: one set of rules for the block and the card.
+export async function listContactsWithTerm() {
+  return getDb()
+    .select({
+      id: contacts.id,
+      name: contacts.name,
+      keepInTouchFrequency: contacts.keepInTouchFrequency,
+      keepInTouchDays: contacts.keepInTouchDays,
+      keepInTouchSince: contacts.keepInTouchSince,
+      lastNoteAt: max(notes.createdAt),
+    })
+    .from(contacts)
+    .leftJoin(notes, eq(notes.contactId, contacts.id))
+    .where(isNotNull(contacts.keepInTouchFrequency))
+    .groupBy(contacts.id)
+    .orderBy(nameOrder, contacts.id);
 }

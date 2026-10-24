@@ -6,13 +6,15 @@ import { addNote, deleteContact } from "@/app/actions";
 import { BackLink } from "@/components/back-link";
 import { ContactAvatar } from "@/components/contact-avatar";
 import { DeleteContactButton } from "@/components/delete-contact-button";
+import { MarkContactedButton } from "@/components/mark-contacted-button";
 import { NoteForm } from "@/components/note-form";
 import { PixelIcon } from "@/components/pixel-icon";
 import { Button } from "@/components/ui/button";
 import { Window } from "@/components/window";
 import { getContact, listNotes } from "@/db/queries";
-import { formatNoteDate, pluralize } from "@/lib/format";
+import { formatDueDate, formatNoteDate, formatOverdue, pluralize } from "@/lib/format";
 import { parseContactId } from "@/lib/ids";
+import { getTermStatus, isFrequency } from "@/lib/keep-in-touch";
 
 // Always read fresh data from the database: any browser sees the same card
 export const dynamic = "force-dynamic";
@@ -35,6 +37,14 @@ export async function generateMetadata({
 export default async function ContactPage({ params }: PageProps<"/contacts/[id]">) {
   const contact = await loadContact(params);
   const notes = await listNotes(contact.id);
+  const term = isFrequency(contact.keepInTouchFrequency)
+    ? getTermStatus({
+        frequency: contact.keepInTouchFrequency,
+        days: contact.keepInTouchDays,
+        since: contact.keepInTouchSince,
+        lastNoteAt: notes[0]?.createdAt ?? null,
+      })
+    : null;
 
   return (
     <div className="flex flex-col gap-4 sm:gap-5">
@@ -67,6 +77,23 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
           </div>
         </div>
         <dl className="grid gap-x-6 gap-y-4 border-t-2 border-dashed border-lilac p-4 sm:grid-cols-[10rem_1fr] sm:p-6">
+          <DetailRow label="Как часто общаться">
+            {term ? (
+              <span className="flex items-center justify-between gap-3">
+                <span>
+                  {term.label} ·{" "}
+                  {term.overdueDays > 0 ? (
+                    <span className="text-danger">
+                      пора связаться, {formatOverdue(term.overdueDays)}
+                    </span>
+                  ) : (
+                    `связаться до ${formatDueDate(term.dueDate)}`
+                  )}
+                </span>
+                <MarkContactedButton contactId={contact.id} name={contact.name} variant="card" />
+              </span>
+            ) : null}
+          </DetailRow>
           <DetailRow label="Откуда знакомы">
             {contact.howWeMet ? (
               <span className="whitespace-pre-wrap">{contact.howWeMet}</span>

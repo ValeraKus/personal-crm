@@ -1,26 +1,40 @@
 "use client";
 
 import Link from "next/link";
-import { startTransition, useActionState, type FormEvent } from "react";
+import { startTransition, useActionState, useState, type FormEvent } from "react";
 
 import type { ContactFormState } from "@/app/actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { isFrequency } from "@/lib/keep-in-touch";
 import type { ContactField } from "@/lib/validation";
+
+// Radio items cannot have an empty value, so "not set" is "none" here and empty in the submitted form
+const FREQUENCY_OPTIONS = [
+  { value: "none", label: "Не задано" },
+  { value: "week", label: "Раз в неделю" },
+  { value: "month", label: "Раз в месяц" },
+  { value: "quarter", label: "Раз в квартал" },
+  { value: "year", label: "Раз в год" },
+] as const;
 
 type ContactFormProps = {
   action: (state: ContactFormState, formData: FormData) => Promise<ContactFormState>;
-  defaultValues?: Partial<Record<ContactField, string | null>>;
+  defaultValues?: Partial<Record<ContactField, string | number | null>>;
   submitLabel: string;
   cancelHref: string;
 };
 
 export function ContactForm({ action, defaultValues, submitLabel, cancelHref }: ContactFormProps) {
   const [state, formAction, isPending] = useActionState(action, {});
+  const initialFrequency = defaultValues?.keepInTouchFrequency;
+  const [frequency, setFrequency] = useState(isFrequency(initialFrequency) ? initialFrequency : "none");
 
   // Submit manually so React does not clear the fields when the server returns errors.
   // `action` on the form still works if the page is submitted before JavaScript loads.
@@ -105,6 +119,49 @@ export function ContactForm({ action, defaultValues, submitLabel, cancelHref }: 
             {errorFor("email")}
           </Field>
         </div>
+
+        <Field data-invalid={Boolean(state.fieldErrors?.keepInTouchDays)}>
+          <FieldLabel id="keepInTouchFrequency-label">Как часто общаться</FieldLabel>
+          <input
+            type="hidden"
+            name="keepInTouchFrequency"
+            value={frequency === "none" ? "" : frequency}
+          />
+          <RadioGroup
+            value={frequency}
+            onValueChange={setFrequency}
+            aria-labelledby="keepInTouchFrequency-label"
+            className="gap-3"
+          >
+            {FREQUENCY_OPTIONS.map((option) => (
+              <div key={option.value} className="flex items-center gap-3">
+                <RadioGroupItem value={option.value} id={`frequency-${option.value}`} />
+                <Label htmlFor={`frequency-${option.value}`} className="text-16 font-normal">
+                  {option.label}
+                </Label>
+              </div>
+            ))}
+            <div className="flex flex-wrap items-center gap-3">
+              <RadioGroupItem value="days" id="frequency-days" />
+              <Label htmlFor="frequency-days" className="text-16 font-normal">
+                Свой срок
+              </Label>
+              <span className={frequency === "days" ? "flex items-center gap-2" : "hidden"}>
+                <span className="text-16 text-ink-soft">Раз в</span>
+                <Input
+                  {...fieldProps("keepInTouchDays")}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  aria-label="Число дней"
+                  className="w-20"
+                />
+                <span className="text-16 text-ink-soft">дней</span>
+              </span>
+            </div>
+          </RadioGroup>
+          {errorFor("keepInTouchDays")}
+        </Field>
       </FieldGroup>
 
       <div className="flex flex-wrap gap-3">

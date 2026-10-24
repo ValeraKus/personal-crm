@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Главная на телефоне — «Пора связаться»</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Press+Start+2P&amp;family=Rubik+Mono+One&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#7B4FE0}a:hover{color:#241A3A}
+a.row-link:hover{background:#F1EAFF}
+button.mark:hover{background:#F1EAFF !important}
+button.mark:active{transform:translate(3px,3px);box-shadow:none !important}
+a:focus-visible,input:focus-visible,button:focus-visible{outline:3px solid #7B4FE0;outline-offset:2px}
+input::placeholder{color:#6A5A8C;opacity:1}
+</style>
+</helmet>
+<div style="width: 390px; height: 1720px; overflow: hidden; box-sizing: border-box; display: flex; flex-direction: column; background-color: #F1EAFF; background-image: linear-gradient(#DCCFFA 1px, transparent 1px), linear-gradient(90deg, #DCCFFA 1px, transparent 1px); background-size: 26px 26px; color: #241A3A; font-family: 'Golos Text', system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+
+  <header style="padding: 20px 16px 0">
+    <div style="display: flex; align-items: center; height: 44px; padding: 0 4px">
+      <a href="MainPhone.dc.html" style="font-family: 'Press Start 2P', monospace; font-size: 11px; color: #241A3A; text-decoration: none">Context</a>
+    </div>
+  </header>
+
+  <main style="padding: 16px 16px 56px; flex: 1; display: flex; flex-direction: column; gap: 24px">
+
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <h1 style="margin: 0; font-family: 'Rubik Mono One', monospace; font-weight: 400; font-size: 30px; line-height: 1.12; text-transform: uppercase">Контакты</h1>
+        <p aria-live="polite" style="margin: 0; font-family: 'Press Start 2P', monospace; font-size: 9px; line-height: 1.5; color: #6A5A8C">{{countText}}</p>
+      </div>
+      <a href="NewPhone.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 10px; height: 48px; padding: 0 20px; box-sizing: border-box; background: #241A3A; color: #FFFFFF; box-shadow: inset -4px -4px 0 #000000, inset 4px 4px 0 #5A4A80; font-family: 'Press Start 2P', monospace; font-size: 11px; text-decoration: none; white-space: nowrap">
+        <svg viewBox="0 0 7 7" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="width: 12px; height: 12px; color: #FF8FC7; flex-shrink: 0"><path d="M3 0h1v7H3zM0 3h7v1H0z"></path></svg>
+        Добавить контакт
+      </a>
+    </div>
+
+    <sc-if value="{{showBlock}}" hint-placeholder-val="{{true}}">
+      <section aria-labelledby="due-title-phone" style="border: 2px solid #241A3A; background: #FFFFFF; box-shadow: 6px 6px 0 #241A3A">
+        <h2 id="due-title-phone" style="position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">Пора связаться</h2>
+        <div style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; box-sizing: border-box; border-bottom: 2px solid #241A3A; background: #FF8FC7">
+          <span aria-hidden="true" style="flex: 1; min-width: 0; font-family: 'Press Start 2P', monospace; font-size: 9px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">пора связаться.exe</span>
+          <span style="font-family: 'Press Start 2P', monospace; font-size: 8px; color: #241A3A; white-space: nowrap">{{overdueCount}}</span>
+          <span aria-hidden="true" style="display: flex; gap: 6px">
+            <span style="width: 14px; height: 14px; box-sizing: border-box; border: 2px solid #241A3A; background: #FFFFFF"></span>
+            <span style="width: 14px; height: 14px; box-sizing: border-box; border: 2px solid #241A3A; background: #FFFFFF"></span>
+            <span style="width: 14px; height: 14px; box-sizing: border-box; border: 2px solid #241A3A; background: #241A3A"></span>
+          </span>
+        </div>
+        <ul style="list-style: none; margin: 0; padding: 0">
+          <sc-for list="{{overdue}}" as="item" hint-placeholder-count="6">
+            <li style="display: flex; align-items: center; border-top: {{item.divider}}">
+              <a class="row-link" href="{{item.href}}" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 12px 10px 12px 14px; color: #241A3A; text-decoration: none">
+                <span aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex-shrink: 0; box-sizing: border-box; border: 2px solid #241A3A; background: {{item.bg}}; font-family: 'Press Start 2P', monospace; font-size: 10px">{{item.initials}}</span>
+                <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+                  <span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{item.name}}</span>
+                  <span style="font-size: 14px; color: #5A4E72">{{item.freq}} · <strong style="font-weight: 600; color: #C2185B; white-space: nowrap">{{item.overdueText}}</strong></span>
+                </span>
+              </a>
+              <button class="mark" type="button" title="Пообщались" aria-label="{{item.markLabel}}" onClick="{{item.mark}}" style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; margin-right: 14px; padding: 0; box-sizing: border-box; border: 2px solid #241A3A; background: #FFFFFF; box-shadow: 3px 3px 0 #241A3A; color: #241A3A; cursor: pointer">
+                <svg viewBox="0 0 7 7" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="width: 14px; height: 14px"><path d="M0 3h1v1H0zM1 4h1v1H1zM2 5h1v1H2zM3 4h1v1H3zM4 3h1v1H4zM5 2h1v1H5zM6 1h1v1H6z"></path></svg>
+              </button>
+            </li>
+          </sc-for>
+        </ul>
+      </section>
+    </sc-if>
+
+    <section aria-label="Все контакты" style="border: 2px solid #241A3A; background: #FFFFFF; box-shadow: 6px 6px 0 #241A3A">
+      <div style="display: flex; align-items: center; gap: 12px; height: 36px; padding: 0 10px; box-sizing: border-box; border-bottom: 2px solid #241A3A; background: #FF8FC7">
+        <span aria-hidden="true" style="flex: 1; min-width: 0; font-family: 'Press Start 2P', monospace; font-size: 9px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">контакты.exe</span>
+        <span aria-hidden="true" style="display: flex; gap: 6px">
+          <span style="width: 14px; height: 14px; box-sizing: border-box; border: 2px solid #241A3A; background: #FFFFFF"></span>
+          <span style="width: 14px; height: 14px; box-sizing: border-box; border: 2px solid #241A3A; background: #FFFFFF"></span>
+          <span style="width: 14px; height: 14px; box-sizing: border-box; border: 2px solid #241A3A; background: #241A3A"></span>
+        </span>
+      </div>
+
+      <div style="border-bottom: 2px solid #241A3A; background: #FFFFFF; padding: 12px">
+        <form role="search" onSubmit="{{onSubmit}}" style="position: relative; margin: 0">
+          <svg viewBox="0 0 8 8" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="position: absolute; left: 14px; top: 14px; width: 16px; height: 16px; color: #241A3A; pointer-events: none"><path d="M1 0h3v1H1zM0 1h1v3H0zM4 1h1v3H4zM1 4h3v1H1zM5 5h1v1H5zM6 6h1v1H6zM7 7h1v1H7z"></path></svg>
+          <input type="search" aria-label="Найти по имени" placeholder="Найти по имени" autocomplete="off" value="{{query}}" onChange="{{onQuery}}" style="width: 100%; height: 44px; box-sizing: border-box; border: 2px solid #241A3A; border-radius: 0; background: #FFFFFF; padding: 0 12px 0 42px; font-family: 'Golos Text', system-ui, sans-serif; font-size: 16px; color: #241A3A">
+        </form>
+      </div>
+
+      <sc-if value="{{hasResults}}" hint-placeholder-val="{{true}}">
+        <sc-for list="{{groups}}" as="group" hint-placeholder-count="4">
+          <section aria-label="На букву {{group.letter}}">
+            <h2 style="margin: 0; border-top: {{group.topBorder}}; border-bottom: 2px solid #241A3A; background: #F1EAFF; padding: 8px 16px; font-family: 'Press Start 2P', monospace; font-weight: 400; font-size: 10px; line-height: 1.5">{{group.letter}}</h2>
+            <ul style="list-style: none; margin: 0; padding: 0">
+              <sc-for list="{{group.items}}" as="item" hint-placeholder-count="2">
+                <li style="border-top: {{item.divider}}">
+                  <a class="row-link" href="{{item.href}}" style="display: flex; align-items: center; gap: 14px; padding: 12px 16px; color: #241A3A; text-decoration: none">
+                    <span aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex-shrink: 0; box-sizing: border-box; border: 2px solid #241A3A; background: {{item.bg}}; font-family: 'Press Start 2P', monospace; font-size: 10px">{{item.initials}}</span>
+                    <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+                      <span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{item.name}}</span>
+                      <span style="font-size: 14px; color: #5A4E72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{item.about}}</span>
+                    </span>
+                  </a>
+                </li>
+              </sc-for>
+            </ul>
+          </section>
+        </sc-for>
+      </sc-if>
+
+      <sc-if value="{{noResults}}" hint-placeholder-val="{{false}}">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 48px 24px; text-align: center">
+          <svg viewBox="0 0 8 8" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="width: 32px; height: 32px; color: #FF8FC7; margin-bottom: 8px"><path d="M1 0h3v1H1zM0 1h1v3H0zM4 1h1v3H4zM1 4h3v1H1zM5 5h1v1H5zM6 6h1v1H6zM7 7h1v1H7z"></path></svg>
+          <p style="margin: 0; font-size: 16px; font-weight: 600">{{noResultsText}}</p>
+          <p style="margin: 0; font-size: 14px; color: #5A4E72">Проверьте написание или поищите по части имени.</p>
+        </div>
+      </sc-if>
+    </section>
+  </main>
+
+  <footer style="padding: 0 16px">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-top: 2px solid #241A3A; padding: 24px 4px 32px">
+      <span style="font-family: 'Press Start 2P', monospace; font-size: 10px">Context</span>
+      <svg viewBox="0 0 7 6" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="width: 21px; height: 18px; color: #FF8FC7"><path d="M1 0h2v1H1zM4 0h2v1H4zM0 1h7v2H0zM1 3h5v1H1zM2 4h3v1H2zM3 5h1v1H3z"></path></svg>
+    </div>
+  </footer>
+
+  <sc-if value="{{toastVisible}}" hint-placeholder-val="{{false}}">
+    <div role="status" style="position: fixed; left: 16px; right: 16px; bottom: 24px; z-index: 50; max-width: 358px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 12px; border: 2px solid #241A3A; background: #FFFFFF; box-shadow: 4px 4px 0 #241A3A; font-size: 14px; line-height: 1.4">
+      <span aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0; box-sizing: border-box; border: 2px solid #241A3A; background: #FF8FC7">
+        <svg viewBox="0 0 7 7" shape-rendering="crispEdges" fill="currentColor" style="width: 10px; height: 10px"><path d="M0 3h1v1H0zM1 4h1v1H1zM2 5h1v1H2zM3 4h1v1H3zM4 3h1v1H4zM5 2h1v1H5zM6 1h1v1H6z"></path></svg>
+      </span>
+      <span style="flex: 1; min-width: 0">{{toastText}}</span>
+      <button class="mark" type="button" onClick="{{onUndo}}" style="height: 44px; flex-shrink: 0; padding: 0 10px; box-sizing: border-box; border: 2px solid #241A3A; background: #FFFFFF; box-shadow: 3px 3px 0 #241A3A; font-family: 'Press Start 2P', monospace; font-size: 8px; color: #241A3A; cursor: pointer">Отменить</button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"block":{"editor":"enum","options":["Есть просроченные","Никто не просрочен"],"default":"Есть просроченные"},"showToast":{"editor":"boolean","default":false},"$preview":{"width":390,"height":1720}}'>
+var TOTAL = 214;
+
+var PEOPLE = [
+  { name: 'Алексей Зайцев', about: 'Фотограф, снимал нашу свадьбу', bg: '#F1EAFF', href: '#' },
+  { name: 'Анна Смирнова', about: 'Дизайнер интерфейсов, бывшая коллега', bg: '#FF8FC7', href: 'CardPhone.dc.html' },
+  { name: 'Борис Орлов', about: 'Сосед по даче', bg: '#FFF4B0', href: '#' },
+  { name: 'Вера Морозова', about: 'Подруга по университету', bg: '#C9B6FF', href: '#' },
+  { name: 'Глеб Попов', about: 'Тренер по бегу', bg: '#F1EAFF', href: '#' },
+  { name: 'Иван Петров', about: 'Однокурсник, живёт в Казани', bg: '#FF8FC7', href: '#' },
+  { name: 'Мария Кузнецова', about: 'Однокурсница, сейчас в маркетинге', bg: '#C9B6FF', href: '#' },
+  { name: 'Ольга Лебедева', about: 'Мама Сашиной одноклассницы', bg: '#FFF4B0', href: '#' }
+];
+
+// Already sorted: most days overdue first, ties alphabetically
+var OVERDUE = [
+  { name: 'Мария Кузнецова', freq: 'Раз в квартал', overdueText: 'просрочено на 45 дней', bg: '#C9B6FF', href: '#' },
+  { name: 'Борис Орлов', freq: 'Раз в год', overdueText: 'просрочено на 10 дней', bg: '#FFF4B0', href: '#' },
+  { name: 'Иван Петров', freq: 'Раз в неделю', overdueText: 'просрочено на 6 дней', bg: '#FF8FC7', href: '#' },
+  { name: 'Вера Морозова', freq: 'Раз в месяц', overdueText: 'просрочено на 4 дня', bg: '#C9B6FF', href: '#' },
+  { name: 'Глеб Попов', freq: 'Раз в неделю', overdueText: 'просрочено на 4 дня', bg: '#F1EAFF', href: '#' },
+  { name: 'Ольга Лебедева', freq: 'Раз в 10 дней', overdueText: 'просрочено на 1 день', bg: '#FFF4B0', href: '#' }
+];
+
+var DIVIDER = '2px dashed #C9B6FF';
+var TOAST_MS = 5000;
+
+function normalize(text) {
+  return text.toLowerCase().replace(/ё/g, 'е');
+}
+
+function initials(name) {
+  return name.trim().split(/\s+/).slice(0, 2).map(function (word) { return word.charAt(0); }).join('').toUpperCase();
+}
+
+function plural(count, forms) {
+  var rule = new Intl.PluralRules('ru-RU').select(count);
+  if (rule === 'one') return forms[0];
+  if (rule === 'few') return forms[1];
+  return forms[2];
+}
+
+class Component extends DCLogic {
+  state = { query: '', marked: [], toastName: '' };
+
+  componentWillUnmount() {
+    clearTimeout(this.toastTimer);
+  }
+
+  mark(name) {
+    var self = this;
+    clearTimeout(this.toastTimer);
+    this.setState({ marked: (this.state.marked || []).concat([name]), toastName: name });
+    this.toastTimer = setTimeout(function () { self.setState({ toastName: '' }); }, TOAST_MS);
+  }
+
+  undo() {
+    var name = this.state.toastName;
+    clearTimeout(this.toastTimer);
+    this.setState({
+      marked: (this.state.marked || []).filter(function (marked) { return marked !== name; }),
+      toastName: ''
+    });
+  }
+
+  renderVals() {
+    var self = this;
+    var query = (this.state && this.state.query) || '';
+    var marked = (this.state && this.state.marked) || [];
+    var toastName = (this.state && this.state.toastName) || '';
+    var words = normalize(query).trim().split(/\s+/).filter(Boolean);
+    var found = PEOPLE.filter(function (person) {
+      return words.every(function (word) { return normalize(person.name).indexOf(word) !== -1; });
+    });
+
+    var groups = [];
+    found.forEach(function (person) {
+      var letter = person.name.charAt(0).toUpperCase();
+      if (letter === 'Ё') letter = 'Е';
+      var last = groups[groups.length - 1];
+      if (!last || last.letter !== letter) {
+        last = { letter: letter, items: [], topBorder: groups.length ? '2px solid #241A3A' : '0' };
+        groups.push(last);
+      }
+      last.items.push(Object.assign({}, person, {
+        initials: initials(person.name),
+        divider: last.items.length ? DIVIDER : '0'
+      }));
+    });
+
+    var visible = OVERDUE.filter(function (item) { return marked.indexOf(item.name) === -1; });
+    var searching = words.length > 0;
+    var noneOverdue = (this.props.block ?? 'Есть просроченные') === 'Никто не просрочен';
+    var sampleToast = Boolean(this.props.showToast ?? false);
+
+    return {
+      query: query,
+      onQuery: function (event) { self.setState({ query: event.target.value }); },
+      onSubmit: function (event) { event.preventDefault(); },
+      countText: searching
+        ? 'Найдено: ' + found.length + ' из ' + TOTAL
+        : TOTAL + ' ' + plural(TOTAL, ['контакт', 'контакта', 'контактов']),
+      showBlock: !searching && !noneOverdue && visible.length > 0,
+      overdueCount: visible.length + ' ' + plural(visible.length, ['контакт', 'контакта', 'контактов']),
+      overdue: visible.map(function (item, index) {
+        return Object.assign({}, item, {
+          initials: initials(item.name),
+          divider: index ? DIVIDER : '0',
+          markLabel: 'Пообщались: ' + item.name,
+          mark: function () { self.mark(item.name); }
+        });
+      }),
+      groups: groups,
+      hasResults: found.length > 0,
+      noResults: found.length === 0,
+      noResultsText: 'Никого не нашли по запросу «' + query.trim() + '»',
+      toastVisible: Boolean(toastName) || sampleToast,
+      toastText: (toastName || 'Мария Кузнецова') + ': отмечено «Пообщались»',
+      onUndo: function () { self.undo(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

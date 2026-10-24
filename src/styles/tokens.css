@@ -21,7 +21,7 @@
   --color-violet: #7B4FE0;       /* focus outline, links */
   --color-butter: #FFF4B0;       /* "card" title bar, highlight of a just added contact */
 
-  --color-danger: #C2185B;       /* app only: errors in forms, 5.9:1 on white */
+  --color-danger: #C2185B;       /* app only: errors in forms and overdue contact terms, 5.9:1 on white */
 
   /* Type sizes in px of the layout (text-15 = 15px), Tailwind defaults are removed */
   --text-*: initial;

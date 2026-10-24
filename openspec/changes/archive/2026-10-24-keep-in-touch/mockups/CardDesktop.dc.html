@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Карточка контакта — частота, срок и «Пообщались»</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Press+Start+2P&amp;family=Rubik+Mono+One&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#7B4FE0}a:hover{color:#241A3A}
+a.plain:hover{text-decoration:underline}
+button.mark:hover{background:#F1EAFF !important}
+button.mark:active{transform:translate(3px,3px);box-shadow:none !important}
+a:focus-visible,button:focus-visible,textarea:focus-visible{outline:3px solid #7B4FE0;outline-offset:2px}
+textarea::placeholder{color:#6A5A8C;opacity:1}
+@media (max-width:640px){.hide-sm{display:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column; background-color: #F1EAFF; background-image: linear-gradient(#DCCFFA 1px, transparent 1px), linear-gradient(90deg, #DCCFFA 1px, transparent 1px); background-size: 32px 32px; color: #241A3A; font-family: 'Golos Text', system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+
+  <header style="width: 100%; max-width: 768px; margin: 0 auto; padding: 28px 16px 0; box-sizing: border-box">
+    <div style="display: flex; align-items: center; height: 56px">
+      <a href="Main.dc.html" style="font-family: 'Press Start 2P', monospace; font-size: 14px; color: #241A3A; text-decoration: none">Context</a>
+    </div>
+  </header>
+
+  <main style="width: 100%; max-width: 768px; margin: 0 auto; padding: 24px 16px 80px; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; gap: 20px">
+
+    <a class="plain" href="Main.dc.html" style="display: inline-flex; align-items: center; gap: 10px; min-height: 44px; width: fit-content; font-family: 'Press Start 2P', monospace; font-size: 10px; color: #463A5E; text-decoration: none; text-underline-offset: 4px">
+      <svg viewBox="0 0 7 7" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="width: 12px; height: 12px; color: #7B4FE0; transform: scaleX(-1)"><path d="M0 3h5v1H0zM3 1h1v1H3zM4 2h1v1H4zM5 3h1v1H5zM4 4h1v1H4zM3 5h1v1H3z"></path></svg>
+      Все контакты
+    </a>
+
+    <section aria-labelledby="contact-name" style="border: 2px solid #241A3A; background: #FFFFFF; box-shadow: 6px 6px 0 #241A3A">
+      <div style="display: flex; align-items: center; gap: 12px; height: 42px; padding: 0 14px; box-sizing: border-box; border-bottom: 2px solid #241A3A; background: #FFF4B0">
+        <span aria-hidden="true" style="flex: 1; min-width: 0; font-family: 'Press Start 2P', monospace; font-size: 11px; line-height: 1.5">карточка</span>
+        <span aria-hidden="true" style="display: flex; gap: 8px">
+          <span style="width: 16px; height: 16px; box-sizing: border-box; border: 2px solid #241A3A; background: #FFFFFF"></span>
+          <span style="width: 16px; height: 16px; box-sizing: border-box; border: 2px solid #241A3A; background: #241A3A"></span>
+        </span>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 24px">
+        <span aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; flex-shrink: 0; box-sizing: border-box; border: 2px solid #241A3A; background: #C9B6FF; font-family: 'Press Start 2P', monospace; font-size: 16px">МК</span>
+        <div style="flex: 1 1 240px; min-width: 0; padding-top: 4px">
+          <h1 id="contact-name" style="margin: 0; font-size: 26px; line-height: 1.12; font-weight: 700">Мария Кузнецова</h1>
+          <p style="margin: 6px 0 0; font-size: 16px; color: #5A4E72">Однокурсница, сейчас в маркетинге</p>
+        </div>
+        <div style="display: flex; flex-shrink: 0; gap: 12px">
+          <a href="EditDesktop.dc.html" style="display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px; box-sizing: border-box; border: 2px solid #241A3A; background: #FFFFFF; box-shadow: 3px 3px 0 #241A3A; font-family: 'Press Start 2P', monospace; font-size: 10px; color: #241A3A; text-decoration: none; white-space: nowrap">
+            <svg viewBox="0 0 7 7" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="width: 12px; height: 12px"><path d="M5 0h1v1H5zM4 1h3v1H4zM3 2h3v1H3zM2 3h3v1H2zM1 4h3v1H1zM1 5h2v1H1zM0 6h1v1H0z"></path></svg>
+            Изменить
+          </a>
+          <button type="button" style="display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px; box-sizing: border-box; border: 2px solid #C2185B; background: #FFFFFF; box-shadow: 3px 3px 0 #241A3A; font-family: 'Press Start 2P', monospace; font-size: 10px; color: #C2185B; cursor: pointer; white-space: nowrap">
+            <svg viewBox="0 0 7 7" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="width: 12px; height: 12px"><path d="M2 0h3v1H2zM0 1h7v1H0zM1 2h1v5H1zM5 2h1v5H5zM2 6h3v1H2zM3 3h1v2H3z"></path></svg>
+            Удалить
+          </button>
+        </div>
+      </div>
+
+      <dl style="margin: 0; display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 16px 24px; align-items: start; border-top: 2px dashed #C9B6FF; padding: 24px">
+        <dt style="font-family: 'Press Start 2P', monospace; font-size: 9px; line-height: 1.5; color: #6A5A8C; padding-top: 4px">Откуда знакомы</dt>
+        <dd style="margin: 0; font-size: 16px">Учились вместе на журфаке, потом пять лет не виделись</dd>
+
+        <dt style="font-family: 'Press Start 2P', monospace; font-size: 9px; line-height: 1.5; color: #6A5A8C; padding-top: 4px">Телефон</dt>
+        <dd style="margin: 0; font-size: 16px"><a class="plain" href="tel:+79164821055" style="color: #241A3A; text-decoration: none; text-underline-offset: 4px">+7 916 482-10-55</a></dd>
+
+        <dt style="font-family: 'Press Start 2P', monospace; font-size: 9px; line-height: 1.5; color: #6A5A8C; padding-top: 4px">Почта</dt>
+        <dd style="margin: 0; font-size: 16px"><a class="plain" href="mailto:maria.k@example.ru" style="color: #241A3A; text-decoration: none; text-underline-offset: 4px">maria.k@example.ru</a></dd>
+
+        <dt style="font-family: 'Press Start 2P', monospace; font-size: 9px; line-height: 1.5; color: #6A5A8C; padding-top: 14px">Как часто общаться</dt>
+        <dd style="margin: 0; font-size: 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px">
+          <span style="flex: 1 1 240px; min-width: 0">
+            <sc-if value="{{notSet}}" hint-placeholder-val="{{false}}"><span style="color: #6A5A8C">Не указано</span></sc-if>
+            <sc-if value="{{isSet}}" hint-placeholder-val="{{true}}"><span>{{freqText}}</span><sc-if value="{{isOverdue}}" hint-placeholder-val="{{true}}"><strong style="font-weight: 600; color: #C2185B">{{overdueText}}</strong></sc-if></sc-if>
+          </span>
+          <sc-if value="{{showMarkButton}}" hint-placeholder-val="{{true}}">
+            <button class="mark" type="button" aria-label="Пообщались: Мария Кузнецова" onClick="{{onMark}}" style="display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; box-sizing: border-box; border: 2px solid #241A3A; background: #FFFFFF; box-shadow: 3px 3px 0 #241A3A; font-family: 'Press Start 2P', monospace; font-size: 10px; color: #241A3A; cursor: pointer; white-space: nowrap">
+              <svg viewBox="0 0 7 7" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="width: 14px; height: 14px"><path d="M0 3h1v1H0zM1 4h1v1H1zM2 5h1v1H2zM3 4h1v1H3zM4 3h1v1H4zM5 2h1v1H5zM6 1h1v1H6z"></path></svg>
+              Пообщались
+            </button>
+          </sc-if>
+        </dd>
+      </dl>
+    </section>
+
+    <section aria-labelledby="notes-title" style="margin-top: 12px; border: 2px solid #241A3A; background: #FFFFFF; box-shadow: 6px 6px 0 #241A3A">
+      <div style="display: flex; align-items: center; gap: 12px; height: 42px; padding: 0 14px; box-sizing: border-box; border-bottom: 2px solid #241A3A; background: #C9B6FF">
+        <h2 id="notes-title" style="flex: 1; min-width: 0; margin: 0; font-family: 'Press Start 2P', monospace; font-weight: 400; font-size: 11px; line-height: 1.5">Заметки</h2>
+        <span style="font-family: 'Press Start 2P', monospace; font-size: 9px; color: #463A5E; white-space: nowrap">{{notesCount}}</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 24px; padding: 24px">
+        <form style="display: flex; flex-direction: column; gap: 12px; margin: 0">
+          <label for="note-body" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">Новая заметка</label>
+          <textarea id="note-body" rows="3" placeholder="О чём поговорили, о чём договорились" style="width: 100%; min-height: 96px; box-sizing: border-box; border: 2px solid #241A3A; border-radius: 0; background: #FFFFFF; padding: 10px 12px; font-family: 'Golos Text', system-ui, sans-serif; font-size: 16px; line-height: 1.5; color: #241A3A; resize: vertical"></textarea>
+          <div style="display: flex; align-items: center; gap: 12px">
+            <button type="button" style="display: inline-flex; align-items: center; height: 44px; padding: 0 16px; border: 0; background: #241A3A; color: #FFFFFF; box-shadow: inset -4px -4px 0 #000000, inset 4px 4px 0 #5A4A80; font-family: 'Press Start 2P', monospace; font-size: 10px; cursor: pointer">Добавить заметку</button>
+            <span class="hide-sm" style="font-size: 13px; color: #6A5A8C">или ⌘ + Enter</span>
+          </div>
+        </form>
+
+        <ol style="list-style: none; margin: 0; padding: 0; border-top: 2px dashed #C9B6FF">
+          <sc-if value="{{marked}}" hint-placeholder-val="{{false}}">
+            <li style="padding: 16px 0">
+              <time datetime="2026-10-24T15:32" style="font-family: 'Press Start 2P', monospace; font-size: 9px; color: #6A5A8C">24 октября 2026 г. в 15:32</time>
+              <p style="margin: 8px 0 0; font-size: 16px; line-height: 1.5; color: #463A5E">Пообщались</p>
+            </li>
+          </sc-if>
+          <li style="padding: 16px 0; border-top: {{firstNoteBorder}}">
+            <time datetime="2026-06-09T18:20" style="font-family: 'Press Start 2P', monospace; font-size: 9px; color: #6A5A8C">9 июня 2026 г. в 18:20</time>
+            <p style="margin: 8px 0 0; font-size: 16px; line-height: 1.5; color: #463A5E">Встретились на дне рождения у Лены. Мария ищет новую работу в маркетинге — обещала прислать резюме, перешлю Диме.</p>
+          </li>
+          <li style="padding: 16px 0 0; border-top: 2px dashed #C9B6FF">
+            <time datetime="2026-03-02T12:05" style="font-family: 'Press Start 2P', monospace; font-size: 9px; color: #6A5A8C">2 марта 2026 г. в 12:05</time>
+            <p style="margin: 8px 0 0; font-size: 16px; line-height: 1.5; color: #463A5E">Созвонились: летом собирается в Казань, просила посоветовать, где остановиться.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer style="width: 100%; max-width: 768px; margin: 0 auto; padding: 0 16px; box-sizing: border-box">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-top: 2px solid #241A3A; padding: 24px 0 32px">
+      <span style="font-family: 'Press Start 2P', monospace; font-size: 10px">Context</span>
+      <svg viewBox="0 0 7 6" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="width: 21px; height: 18px; color: #FF8FC7"><path d="M1 0h2v1H1zM4 0h2v1H4zM0 1h7v2H0zM1 3h5v1H1zM2 4h3v1H2zM3 5h1v1H3z"></path></svg>
+    </div>
+  </footer>
+
+  <sc-if value="{{toastVisible}}" hint-placeholder-val="{{false}}">
+    <div role="status" style="position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 50; width: 380px; max-width: calc(100% - 32px); box-sizing: border-box; display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 14px; border: 2px solid #241A3A; background: #FFFFFF; box-shadow: 4px 4px 0 #241A3A; font-size: 14px; line-height: 1.4">
+      <span aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0; box-sizing: border-box; border: 2px solid #241A3A; background: #FF8FC7">
+        <svg viewBox="0 0 7 7" shape-rendering="crispEdges" fill="currentColor" style="width: 10px; height: 10px"><path d="M0 3h1v1H0zM1 4h1v1H1zM2 5h1v1H2zM3 4h1v1H3zM4 3h1v1H4zM5 2h1v1H5zM6 1h1v1H6z"></path></svg>
+      </span>
+      <span style="flex: 1; min-width: 0">Мария Кузнецова: отмечено «Пообщались»</span>
+      <button class="mark" type="button" onClick="{{onUndo}}" style="height: 44px; flex-shrink: 0; padding: 0 12px; box-sizing: border-box; border: 2px solid #241A3A; background: #FFFFFF; box-shadow: 3px 3px 0 #241A3A; font-family: 'Press Start 2P', monospace; font-size: 9px; color: #241A3A; cursor: pointer">Отменить</button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"cardState":{"editor":"enum","options":["Просрочено","Срок не прошёл","Не задано"],"default":"Просрочено"},"showToast":{"editor":"boolean","default":false},"$preview":{"width":1280,"height":1320}}'>
+// Card text for each state of the "Как часто общаться" row; last note is 9 June 2026, today is 24 October 2026.
+// afterMark: the row right after "Пообщались" adds a note today.
+var STATES = {
+  'Просрочено': { isSet: true, freqText: 'Раз в квартал · ', isOverdue: true, overdueText: 'пора связаться, просрочено на 45 дней', afterMark: 'Раз в квартал · связаться до 24 января 2027' },
+  'Срок не прошёл': { isSet: true, freqText: 'Раз в год · связаться до 9 июня 2027', isOverdue: false, overdueText: '', afterMark: 'Раз в год · связаться до 24 октября 2027' },
+  'Не задано': { isSet: false, freqText: '', isOverdue: false, overdueText: '', afterMark: '' }
+};
+
+var TOAST_MS = 5000;
+
+class Component extends DCLogic {
+  state = { marked: false, toast: false };
+
+  componentWillUnmount() {
+    clearTimeout(this.toastTimer);
+  }
+
+  mark() {
+    var self = this;
+    clearTimeout(this.toastTimer);
+    this.setState({ marked: true, toast: true });
+    this.toastTimer = setTimeout(function () { self.setState({ toast: false }); }, TOAST_MS);
+  }
+
+  undo() {
+    clearTimeout(this.toastTimer);
+    this.setState({ marked: false, toast: false });
+  }
+
+  renderVals() {
+    var self = this;
+    var base = STATES[this.props.cardState ?? 'Просрочено'] || STATES['Просрочено'];
+    var marked = Boolean(this.state && this.state.marked) && base.isSet;
+    var toast = Boolean(this.state && this.state.toast);
+    return {
+      isSet: base.isSet,
+      notSet: !base.isSet,
+      freqText: marked ? base.afterMark : base.freqText,
+      isOverdue: !marked && base.isOverdue,
+      overdueText: base.overdueText,
+      showMarkButton: base.isSet,
+      onMark: function () { self.mark(); },
+      marked: marked,
+      firstNoteBorder: marked ? '2px dashed #C9B6FF' : '0',
+      notesCount: marked ? '3 заметки' : '2 заметки',
+      toastVisible: toast || Boolean(this.props.showToast ?? false),
+      onUndo: function () { self.undo(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

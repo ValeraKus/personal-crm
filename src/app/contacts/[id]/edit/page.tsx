@@ -30,7 +30,11 @@ export default async function EditContactPage({ params }: PageProps<"/contacts/[
         <div className="p-4 sm:p-6">
           <ContactForm
             action={updateContact.bind(null, contact.id)}
-            defaultValues={contact}
+            defaultValues={{
+              ...contact,
+              // The "days" field is shown only for the custom term
+              keepInTouchDays: contact.keepInTouchDays?.toString(),
+            }}
             submitLabel="Сохранить"
             cancelHref={cardHref}
           />

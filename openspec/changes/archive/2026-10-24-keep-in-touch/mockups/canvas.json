@@ -1,0 +1,28 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-24T17:10:00Z" },
+  "title": "Макет «Пора связаться»",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1280, "h": 1780, "title": "Главная", "expand": "fill", "is_interactive": true },
+    "CardDesktop.dc.html": { "x": 1360, "y": 0, "w": 1280, "h": 1320, "title": "Карточка контакта", "expand": "fill", "is_interactive": true },
+    "EditDesktop.dc.html": { "x": 2720, "y": 0, "w": 1280, "h": 1280, "title": "Изменить контакт", "expand": "fill", "is_interactive": true },
+    "MainPhone.dc.html": { "x": 0, "y": 2200, "w": 390, "h": 1720, "title": "Главная — телефон", "is_interactive": true },
+    "CardPhone.dc.html": { "x": 470, "y": 2200, "w": 390, "h": 1200, "title": "Карточка — телефон", "is_interactive": true },
+    "NewPhone.dc.html": { "x": 940, "y": 2200, "w": 390, "h": 1400, "title": "Новый контакт — телефон", "is_interactive": true }
+  },
+  "order": [
+    "Main.dc.html",
+    "CardDesktop.dc.html",
+    "EditDesktop.dc.html",
+    "MainPhone.dc.html",
+    "CardPhone.dc.html",
+    "NewPhone.dc.html"
+  ],
+  "notes": {
+    "desktop": { "x": 0, "y": -300, "text": "Компьютер", "kind": "title1", "maxW": 4000 },
+    "phone": { "x": 0, "y": 1900, "text": "Телефон", "kind": "title1", "maxW": 1330 }
+  },
+  "designSystems": []
+}

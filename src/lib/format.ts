@@ -39,3 +39,20 @@ export function groupLetter(name: string) {
   if (first === "Ё") return "Е";
   return /\p{L}/u.test(first) ? first : "#";
 }
+
+const dueDateFormat = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" });
+const dueDateWithYearFormat = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+// "12 ноября"; the year is shown only when it is not the current one
+export function formatDueDate(date: Date, now = new Date()) {
+  const format = date.getFullYear() === now.getFullYear() ? dueDateFormat : dueDateWithYearFormat;
+  return format.format(date).replace(/\s?г\.$/, "");
+}
+
+export function formatOverdue(days: number) {
+  return `просрочено на ${days} ${pluralize(days, ["день", "дня", "дней"])}`;
+}

@@ -3,12 +3,19 @@ import Link from "next/link";
 import { AddedContactNotice } from "@/components/added-contact-notice";
 import { ContactAvatar } from "@/components/contact-avatar";
 import { ContactSearch } from "@/components/contact-search";
+import { KeepInTouchBlock, type OverdueContact } from "@/components/keep-in-touch-block";
 import { PixelIcon } from "@/components/pixel-icon";
 import { Button } from "@/components/ui/button";
 import { Window } from "@/components/window";
-import { countContacts, listContacts, type ContactListItem } from "@/db/queries";
+import {
+  countContacts,
+  listContacts,
+  listContactsWithTerm,
+  type ContactListItem,
+} from "@/db/queries";
 import { formatContactCount, groupLetter } from "@/lib/format";
 import { parseContactId } from "@/lib/ids";
+import { getTermStatus, isFrequency } from "@/lib/keep-in-touch";
 import { cn } from "@/lib/utils";
 
 // Always read fresh data from the database: any browser sees the same contacts
@@ -28,12 +35,45 @@ function groupByLetter(items: ContactListItem[]) {
   return groups;
 }
 
+// Overdue contacts, most overdue first; the stable sort keeps the alphabetical order of equals
+async function listOverdueContacts() {
+  const rows = await listContactsWithTerm();
+  const now = new Date();
+  const overdue: OverdueContact[] = [];
+  for (const row of rows) {
+    if (!isFrequency(row.keepInTouchFrequency)) continue;
+    const status = getTermStatus(
+      {
+        frequency: row.keepInTouchFrequency,
+        days: row.keepInTouchDays,
+        since: row.keepInTouchSince,
+        lastNoteAt: row.lastNoteAt,
+      },
+      now,
+    );
+    if (status && status.overdueDays > 0) {
+      overdue.push({
+        id: row.id,
+        name: row.name,
+        label: status.label,
+        overdueDays: status.overdueDays,
+      });
+    }
+  }
+  return overdue.sort((a, b) => b.overdueDays - a.overdueDays);
+}
+
 export default async function ContactsPage({ searchParams }: PageProps<"/">) {
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q.trim() : "";
   const addedId = parseContactId(params.added);
 
-  const [items, total] = await Promise.all([listContacts(query), countContacts()]);
+  // The block is hidden while searching, so its query is skipped too
+  const [items, total, overdue] = await Promise.all([
+    listContacts(query),
+    countContacts(),
+    query ? [] : listOverdueContacts(),
+  ]);
   const groups = groupByLetter(items);
   const added = addedId === null ? undefined : items.find((item) => item.id === addedId);
 
@@ -55,6 +95,8 @@ export default async function ContactsPage({ searchParams }: PageProps<"/">) {
           </Link>
         </Button>
       </div>
+
+      {overdue.length > 0 ? <KeepInTouchBlock contacts={overdue} /> : null}
 
       <Window title="контакты.exe" bar="accent" controls={3}>
         <div className="sticky top-0 z-10 border-b-2 border-ink bg-white p-3 sm:p-4">

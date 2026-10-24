@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Изменить контакт — поле «Как часто общаться» и свой срок</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;family=Press+Start+2P&amp;family=Rubik+Mono+One&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#7B4FE0}a:hover{color:#241A3A}
+a.plain:hover{text-decoration:underline}
+a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #7B4FE0;outline-offset:2px}
+label.chip:has(input:focus-visible) > span{outline:3px solid #7B4FE0;outline-offset:3px}
+label.chip:hover > span.off{background:#F1EAFF}
+input::placeholder,textarea::placeholder{color:#6A5A8C;opacity:1}
+@media (max-width:640px){.two-cols{grid-template-columns:minmax(0,1fr) !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column; background-color: #F1EAFF; background-image: linear-gradient(#DCCFFA 1px, transparent 1px), linear-gradient(90deg, #DCCFFA 1px, transparent 1px); background-size: 32px 32px; color: #241A3A; font-family: 'Golos Text', system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+
+  <header style="width: 100%; max-width: 768px; margin: 0 auto; padding: 28px 16px 0; box-sizing: border-box">
+    <div style="display: flex; align-items: center; height: 56px">
+      <a href="Main.dc.html" style="font-family: 'Press Start 2P', monospace; font-size: 14px; color: #241A3A; text-decoration: none">Context</a>
+    </div>
+  </header>
+
+  <main style="width: 100%; max-width: 768px; margin: 0 auto; padding: 24px 16px 80px; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; gap: 20px">
+
+    <a class="plain" href="CardDesktop.dc.html" style="display: inline-flex; align-items: center; gap: 10px; min-height: 44px; width: fit-content; font-family: 'Press Start 2P', monospace; font-size: 10px; color: #463A5E; text-decoration: none; text-underline-offset: 4px">
+      <svg viewBox="0 0 7 7" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="width: 12px; height: 12px; color: #7B4FE0; transform: scaleX(-1)"><path d="M0 3h5v1H0zM3 1h1v1H3zM4 2h1v1H4zM5 3h1v1H5zM4 4h1v1H4zM3 5h1v1H3z"></path></svg>
+      Мария Кузнецова
+    </a>
+
+    <h1 style="margin: 0; font-family: 'Rubik Mono One', monospace; font-weight: 400; font-size: 38px; line-height: 1.12; text-transform: uppercase">Изменить контакт</h1>
+
+    <section aria-label="Карточка контакта" style="margin-top: 8px; border: 2px solid #241A3A; background: #FFFFFF; box-shadow: 6px 6px 0 #241A3A">
+      <div style="display: flex; align-items: center; gap: 12px; height: 42px; padding: 0 14px; box-sizing: border-box; border-bottom: 2px solid #241A3A; background: #FFF4B0">
+        <span aria-hidden="true" style="flex: 1; min-width: 0; font-family: 'Press Start 2P', monospace; font-size: 11px; line-height: 1.5">карточка</span>
+        <span aria-hidden="true" style="display: flex; gap: 8px">
+          <span style="width: 16px; height: 16px; box-sizing: border-box; border: 2px solid #241A3A; background: #FFFFFF"></span>
+          <span style="width: 16px; height: 16px; box-sizing: border-box; border: 2px solid #241A3A; background: #241A3A"></span>
+        </span>
+      </div>
+
+      <form onSubmit="{{onSubmit}}" style="display: flex; flex-direction: column; gap: 24px; margin: 0; padding: 24px">
+        <div style="display: flex; flex-direction: column; gap: 20px">
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <label for="name" style="font-size: 14px; font-weight: 600">Имя и фамилия *</label>
+            <input id="name" type="text" autocomplete="off" value="{{nameValue}}" onChange="{{onName}}" style="height: 44px; box-sizing: border-box; border: 2px solid #241A3A; border-radius: 0; background: #FFFFFF; padding: 0 12px; font-family: 'Golos Text', system-ui, sans-serif; font-size: 16px; color: #241A3A">
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <label for="about" style="font-size: 14px; font-weight: 600">Кто это</label>
+            <input id="about" type="text" autocomplete="off" placeholder="Например: дизайнер в студии, сосед по даче" value="{{aboutValue}}" onChange="{{onAbout}}" style="height: 44px; box-sizing: border-box; border: 2px solid #241A3A; border-radius: 0; background: #FFFFFF; padding: 0 12px; font-family: 'Golos Text', system-ui, sans-serif; font-size: 16px; color: #241A3A">
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <label for="howWeMet" style="font-size: 14px; font-weight: 600">Откуда знакомы</label>
+            <textarea id="howWeMet" rows="3" placeholder="Где и когда познакомились, через кого" value="{{howWeMetValue}}" onChange="{{onHowWeMet}}" style="min-height: 96px; box-sizing: border-box; border: 2px solid #241A3A; border-radius: 0; background: #FFFFFF; padding: 10px 12px; font-family: 'Golos Text', system-ui, sans-serif; font-size: 16px; line-height: 1.5; color: #241A3A; resize: vertical"></textarea>
+          </div>
+
+          <div class="two-cols" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px">
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <label for="phone" style="font-size: 14px; font-weight: 600">Телефон</label>
+              <input id="phone" type="tel" inputmode="tel" autocomplete="off" placeholder="+7 900 123-45-67" value="{{phoneValue}}" onChange="{{onPhone}}" style="height: 44px; box-sizing: border-box; border: 2px solid #241A3A; border-radius: 0; background: #FFFFFF; padding: 0 12px; font-family: 'Golos Text', system-ui, sans-serif; font-size: 16px; color: #241A3A">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <label for="email" style="font-size: 14px; font-weight: 600">Почта</label>
+              <input id="email" type="email" autocomplete="off" placeholder="name@example.com" value="{{emailValue}}" onChange="{{onEmail}}" style="height: 44px; box-sizing: border-box; border: 2px solid #241A3A; border-radius: 0; background: #FFFFFF; padding: 0 12px; font-family: 'Golos Text', system-ui, sans-serif; font-size: 16px; color: #241A3A">
+            </div>
+          </div>
+
+          <fieldset style="border: 0; margin: 0; padding: 0; min-width: 0">
+            <legend style="padding: 0; margin-bottom: 10px; font-size: 14px; font-weight: 600">Как часто общаться</legend>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px">
+              <sc-for list="{{freqs}}" as="f" hint-placeholder-count="6">
+                <label class="chip" style="position: relative; display: inline-flex; cursor: pointer">
+                  <input type="radio" name="keepInTouchFrequency" value="{{f.value}}" checked="{{f.selected}}" onChange="{{f.pick}}" style="position: absolute; top: 0; left: 0; width: 1px; height: 1px; margin: 0; opacity: 0">
+                  <sc-if value="{{f.selected}}" hint-placeholder-val="{{false}}">
+                    <span style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; box-sizing: border-box; border: 2px solid #241A3A; background: #241A3A; color: #FFFFFF; font-size: 15px; font-weight: 500; white-space: nowrap; transform: translate(3px, 3px)">
+                      <svg viewBox="0 0 7 7" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="width: 12px; height: 12px; color: #FF8FC7"><path d="M0 3h1v1H0zM1 4h1v1H1zM2 5h1v1H2zM3 4h1v1H3zM4 3h1v1H4zM5 2h1v1H5zM6 1h1v1H6z"></path></svg>
+                      {{f.label}}
+                    </span>
+                  </sc-if>
+                  <sc-if value="{{f.notSelected}}" hint-placeholder-val="{{true}}">
+                    <span class="off" style="display: inline-flex; align-items: center; height: 44px; padding: 0 14px; box-sizing: border-box; border: 2px solid #241A3A; background: #FFFFFF; box-shadow: 3px 3px 0 #241A3A; font-size: 15px; font-weight: 500; white-space: nowrap">{{f.label}}</span>
+                  </sc-if>
+                </label>
+              </sc-for>
+            </div>
+
+            <sc-if value="{{isCustom}}" hint-placeholder-val="{{false}}">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px">
+                <span aria-hidden="true" style="font-size: 16px">Раз в</span>
+                <input id="days" type="text" inputmode="numeric" autocomplete="off" aria-label="Раз в сколько дней" aria-invalid="{{daysInvalid}}" aria-describedby="days-error" value="{{daysValue}}" onChange="{{onDays}}" style="width: 88px; height: 44px; box-sizing: border-box; border: 2px solid {{daysBorder}}; border-radius: 0; background: #FFFFFF; padding: 0 12px; font-family: 'Golos Text', system-ui, sans-serif; font-size: 16px; color: #241A3A; text-align: center">
+                <span aria-hidden="true" style="font-size: 16px">{{daysUnit}}</span>
+                <span style="font-size: 14px; color: #5A4E72">от 1 до 365</span>
+              </div>
+              <sc-if value="{{showDaysError}}" hint-placeholder-val="{{false}}">
+                <p id="days-error" style="margin: 8px 0 0; font-size: 14px; color: #C2185B">Укажите число дней от 1 до 365</p>
+              </sc-if>
+            </sc-if>
+          </fieldset>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 12px">
+          <a href="CardDesktop.dc.html" onClick="{{onSave}}" style="display: inline-flex; align-items: center; height: 48px; padding: 0 20px; box-sizing: border-box; background: #241A3A; color: #FFFFFF; box-shadow: inset -4px -4px 0 #000000, inset 4px 4px 0 #5A4A80; font-family: 'Press Start 2P', monospace; font-size: 11px; text-decoration: none; white-space: nowrap">Сохранить</a>
+          <a href="CardDesktop.dc.html" style="display: inline-flex; align-items: center; height: 48px; padding: 0 20px; box-sizing: border-box; color: #241A3A; font-family: 'Press Start 2P', monospace; font-size: 11px; text-decoration: none; white-space: nowrap">Отмена</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <footer style="width: 100%; max-width: 768px; margin: 0 auto; padding: 0 16px; box-sizing: border-box">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-top: 2px solid #241A3A; padding: 24px 0 32px">
+      <span style="font-family: 'Press Start 2P', monospace; font-size: 10px">Context</span>
+      <svg viewBox="0 0 7 6" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true" style="width: 21px; height: 18px; color: #FF8FC7"><path d="M1 0h2v1H1zM4 0h2v1H4zM0 1h7v2H0zM1 3h5v1H1zM2 4h3v1H2zM3 5h1v1H3z"></path></svg>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"preset":{"editor":"enum","options":["Как сохранено — раз в квартал","Свой срок — 10 дней","Ошибка в числе дней"],"default":"Как сохранено — раз в квартал"},"$preview":{"width":1280,"height":1280}}'>
+var FREQUENCIES = [
+  { value: '', label: 'Не задано' },
+  { value: 'week', label: 'Раз в неделю' },
+  { value: 'month', label: 'Раз в месяц' },
+  { value: 'quarter', label: 'Раз в квартал' },
+  { value: 'year', label: 'Раз в год' },
+  { value: 'days', label: 'Свой срок' }
+];
+
+var SAVED = {
+  name: 'Мария Кузнецова',
+  about: 'Однокурсница, сейчас в маркетинге',
+  howWeMet: 'Учились вместе на журфаке, потом пять лет не виделись',
+  phone: '+7 916 482-10-55',
+  email: 'maria.k@example.ru'
+};
+
+var DEFAULT_PRESET = 'Как сохранено — раз в квартал';
+var PRESETS = {
+  'Как сохранено — раз в квартал': { frequency: 'quarter', days: '', showErrors: false },
+  'Свой срок — 10 дней': { frequency: 'days', days: '10', showErrors: false },
+  'Ошибка в числе дней': { frequency: 'days', days: '400', showErrors: true }
+};
+
+function plural(count, forms) {
+  var rule = new Intl.PluralRules('ru-RU').select(count);
+  if (rule === 'one') return forms[0];
+  if (rule === 'few') return forms[1];
+  return forms[2];
+}
+
+class Component extends DCLogic {
+  state = { values: null, showErrors: null };
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.preset !== this.props.preset) {
+      this.setState({ values: null, showErrors: null });
+    }
+  }
+
+  renderVals() {
+    var self = this;
+    var preset = PRESETS[this.props.preset ?? DEFAULT_PRESET] || PRESETS[DEFAULT_PRESET];
+    var values = (this.state && this.state.values) || Object.assign({}, SAVED, { frequency: preset.frequency, days: preset.days });
+    var stateErrors = this.state ? this.state.showErrors : null;
+    var showErrors = stateErrors === null || stateErrors === undefined ? preset.showErrors : stateErrors;
+
+    var isCustom = values.frequency === 'days';
+    var daysText = String(values.days || '').trim();
+    var daysNumber = Number(daysText);
+    var daysValid = /^\d+$/.test(daysText) && daysNumber >= 1 && daysNumber <= 365;
+    var daysError = isCustom && !daysValid;
+
+    function setField(key) {
+      return function (event) {
+        var next = Object.assign({}, values);
+        next[key] = event.target.value;
+        self.setState({ values: next, showErrors: showErrors });
+      };
+    }
+
+    return {
+      onSubmit: function (event) { event.preventDefault(); },
+      onSave: function (event) {
+        if (daysError) {
+          event.preventDefault();
+          self.setState({ values: values, showErrors: true });
+        }
+      },
+      nameValue: values.name,
+      onName: setField('name'),
+      aboutValue: values.about,
+      onAbout: setField('about'),
+      howWeMetValue: values.howWeMet,
+      onHowWeMet: setField('howWeMet'),
+      phoneValue: values.phone,
+      onPhone: setField('phone'),
+      emailValue: values.email,
+      onEmail: setField('email'),
+      isCustom: isCustom,
+      daysValue: values.days,
+      onDays: setField('days'),
+      daysUnit: daysValid ? plural(daysNumber, ['день', 'дня', 'дней']) : 'дней',
+      daysInvalid: daysError && showErrors,
+      showDaysError: daysError && showErrors,
+      daysBorder: daysError && showErrors ? '#C2185B' : '#241A3A',
+      freqs: FREQUENCIES.map(function (option) {
+        var selected = option.value === values.frequency;
+        return {
+          value: option.value,
+          label: option.label,
+          selected: selected,
+          notSelected: !selected,
+          pick: function () {
+            self.setState({ values: Object.assign({}, values, { frequency: option.value }), showErrors: showErrors });
+          }
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

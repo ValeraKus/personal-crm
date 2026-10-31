@@ -5,23 +5,23 @@
 @theme {
   /* Colors: only the design palette, Tailwind defaults are removed */
   --color-*: initial;
-  --color-ink: #241A3A;          /* main text, borders, hard shadows, dark buttons */
-  --color-ink-deep: #000000;     /* inner bottom-right bevel of dark buttons, button hover */
-  --color-ink-soft: #463A5E;     /* body copy on light */
-  --color-ink-muted: #5A4E72;    /* secondary copy */
-  --color-ink-faint: #6A5A8C;    /* captions, small pixel labels, placeholders */
-  --color-bevel: #5A4A80;        /* inner top-left bevel of dark buttons */
+  --color-ink: #241a3a; /* main text, borders, hard shadows, dark buttons */
+  --color-ink-deep: #000000; /* inner bottom-right bevel of dark buttons, button hover */
+  --color-ink-soft: #463a5e; /* body copy on light */
+  --color-ink-muted: #5a4e72; /* secondary copy */
+  --color-ink-faint: #6a5a8c; /* captions, small pixel labels, placeholders */
+  --color-bevel: #5a4a80; /* inner top-left bevel of dark buttons */
 
-  --color-paper: #F1EAFF;        /* page background (lavender), hover on white */
-  --color-grid: #DCCFFA;         /* background grid lines */
-  --color-white: #FFFFFF;        /* window bodies, fields */
+  --color-paper: #f1eaff; /* page background (lavender), hover on white */
+  --color-grid: #dccffa; /* background grid lines */
+  --color-white: #ffffff; /* window bodies, fields */
 
-  --color-accent: #FF8FC7;       /* pink: window title bars, icons on dark buttons */
-  --color-lilac: #C9B6FF;        /* secondary title bars, dashed dividers */
-  --color-violet: #7B4FE0;       /* focus outline, links */
-  --color-butter: #FFF4B0;       /* "card" title bar, highlight of a just added contact */
+  --color-accent: #ff8fc7; /* pink: window title bars, icons on dark buttons */
+  --color-lilac: #c9b6ff; /* secondary title bars, dashed dividers */
+  --color-violet: #7b4fe0; /* focus outline, links */
+  --color-butter: #fff4b0; /* "card" title bar, highlight of a just added contact */
 
-  --color-danger: #C2185B;       /* app only: errors in forms and overdue contact terms, 5.9:1 on white */
+  --color-danger: #c2185b; /* app only: errors in forms and overdue contact terms, 5.9:1 on white */
 
   /* Type sizes in px of the layout (text-15 = 15px), Tailwind defaults are removed */
   --text-*: initial;
@@ -43,9 +43,9 @@
   --text-44: 2.75rem;
 
   /* Line heights */
-  --leading-heading: 1.12;       /* display headings */
-  --leading-body: 1.5;           /* paragraphs, notes */
-  --leading-card: 1.45;          /* compact copy */
+  --leading-heading: 1.12; /* display headings */
+  --leading-body: 1.5; /* paragraphs, notes */
+  --leading-card: 1.45; /* compact copy */
 
   /* Hard pixel shadows (no blur) */
   --shadow-*: initial;
@@ -56,14 +56,14 @@
   /* Retro bevel for dark buttons */
   --shadow-bevel: inset -4px -4px 0 var(--color-ink-deep), inset 4px 4px 0 var(--color-bevel);
 
-  --radius-*: initial;           /* everything is square: no rounded corners anywhere */
+  --radius-*: initial; /* everything is square: no rounded corners anywhere */
 }
 
 /* Fonts come from next/font in src/app/layout.tsx as CSS variables */
 @theme inline {
-  --font-sans: var(--font-golos-text), system-ui, sans-serif;  /* body */
-  --font-display: var(--font-rubik-mono-one), monospace;       /* page headings, always uppercase */
-  --font-pixel: var(--font-press-start-2p), monospace;         /* logo, buttons, window titles, labels */
+  --font-sans: var(--font-golos-text), system-ui, sans-serif; /* body */
+  --font-display: var(--font-rubik-mono-one), monospace; /* page headings, always uppercase */
+  --font-pixel: var(--font-press-start-2p), monospace; /* logo, buttons, window titles, labels */
 }
 
 /* Light page grid: 26px cells on phones, 32px from md up */
@@ -73,5 +73,7 @@
     linear-gradient(var(--color-grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
   background-size: 26px 26px;
-  @media (width >= 48rem) { background-size: 32px 32px; }
+  @media (width >= 48rem) {
+    background-size: 32px 32px;
+  }
 }

@@ -65,9 +65,7 @@ export function MarkContactedButton({ contactId, name, variant }: MarkContactedB
       className={cn(variant === "row" && "size-11")}
     >
       {pending ? <Spinner /> : <PixelIcon name="check" className="size-3" />}
-      {variant === "card" ? (
-        <span className="hidden sm:inline">{CONTACTED_NOTE}</span>
-      ) : null}
+      {variant === "card" ? <span className="hidden sm:inline">{CONTACTED_NOTE}</span> : null}
       <span className="sr-only">{`${CONTACTED_NOTE}: ${name}`}</span>
     </Button>
   );

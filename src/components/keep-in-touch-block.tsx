@@ -20,9 +20,7 @@ export function KeepInTouchBlock({ contacts }: { contacts: OverdueContact[] }) {
         title="пора связаться.exe"
         bar="accent"
         controls={3}
-        aside={
-          <span className="font-pixel text-8 text-ink sm:text-9">{contacts.length}</span>
-        }
+        aside={<span className="font-pixel text-8 text-ink sm:text-9">{contacts.length}</span>}
       >
         <ul className="divide-y-2 divide-dashed divide-lilac">
           {contacts.map((contact) => (

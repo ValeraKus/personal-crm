@@ -27,9 +27,7 @@ async function loadContact(params: PageProps<"/contacts/[id]">["params"]) {
   return contact;
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps<"/contacts/[id]">): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/contacts/[id]">): Promise<Metadata> {
   const contact = await loadContact(params);
   return { title: contact.name };
 }

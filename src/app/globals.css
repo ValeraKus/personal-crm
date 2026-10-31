@@ -36,7 +36,8 @@
     color-scheme: light;
     @apply bg-paper font-sans text-ink;
   }
-  button:not(:disabled), [role="button"]:not(:disabled) {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
     cursor: pointer;
   }
   a:focus-visible {

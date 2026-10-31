@@ -161,9 +161,7 @@ function EmptyState({ query }: { query: string }) {
       {query ? (
         <>
           <p className="text-16 font-semibold">Никого не нашли по запросу «{query}»</p>
-          <p className="text-14 text-ink-muted">
-            Проверьте написание или поищите по части имени.
-          </p>
+          <p className="text-14 text-ink-muted">Проверьте написание или поищите по части имени.</p>
         </>
       ) : (
         <>

@@ -56,3 +56,14 @@ export type ContactField = keyof ContactInput;
 export const noteSchema = z.object({
   body: z.string().trim().min(1, "Заметка пустая").max(10000, "Не длиннее 10 000 символов"),
 });
+
+export const groupNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Укажите название группы")
+  .max(50, "Не длиннее 50 символов");
+
+// Name as compared for uniqueness: no case, "ё" same as "е". Mirrors the unique index on groups.
+export function foldGroupName(name: string) {
+  return name.toLowerCase().replaceAll("ё", "е");
+}

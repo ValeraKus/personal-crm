@@ -1,10 +1,19 @@
 import "server-only";
 
-import { and, count, desc, eq, isNotNull, max, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  isNotNull,
+  max,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { cache } from "react";
 
 import { getDb } from "./index";
-import { contacts, notes } from "./schema";
+import { contactGroups, contacts, groups, notes } from "./schema";
 
 // Alphabetical order by Russian rules: Cyrillic first, "ё" sorted together with "е"
 const nameOrder = sql`${contacts.name} collate "ru-RU-x-icu"`;
@@ -26,12 +35,26 @@ function nameSearchCondition(query: string): SQL | undefined {
   if (words.length === 0) return undefined;
   return and(
     ...words.map(
-      (word) => sql`${normalizedName} like ${`%${escapeLike(normalizeSearchWord(word))}%`}`,
+      (word) =>
+        sql`${normalizedName} like ${`%${escapeLike(normalizeSearchWord(word))}%`}`,
     ),
   );
 }
 
-export async function listContacts(query = "") {
+// A contact must be in every selected group: one EXISTS per group, joined with AND
+function groupsCondition(groupIds: number[]): SQL | undefined {
+  if (groupIds.length === 0) return undefined;
+  return and(
+    ...groupIds.map(
+      (groupId) => sql`exists (
+        select 1 from ${contactGroups}
+        where ${contactGroups.contactId} = ${contacts.id} and ${contactGroups.groupId} = ${groupId}
+      )`,
+    ),
+  );
+}
+
+export async function listContacts(query = "", groupIds: number[] = []) {
   return getDb()
     .select({
       id: contacts.id,
@@ -41,7 +64,7 @@ export async function listContacts(query = "") {
       email: contacts.email,
     })
     .from(contacts)
-    .where(nameSearchCondition(query))
+    .where(and(nameSearchCondition(query), groupsCondition(groupIds)))
     .orderBy(nameOrder, contacts.id);
 }
 
@@ -54,7 +77,10 @@ export async function countContacts() {
 
 // Cached per request: the page and its metadata both read the same contact
 export const getContact = cache(async (id: number) => {
-  const [contact] = await getDb().select().from(contacts).where(eq(contacts.id, id));
+  const [contact] = await getDb()
+    .select()
+    .from(contacts)
+    .where(eq(contacts.id, id));
   return contact;
 });
 
@@ -83,4 +109,36 @@ export async function listContactsWithTerm() {
     .where(isNotNull(contacts.keepInTouchFrequency))
     .groupBy(contacts.id)
     .orderBy(nameOrder, contacts.id);
+}
+
+// Same alphabetical rules as the contact list
+const groupNameOrder = sql`${groups.name} collate "ru-RU-x-icu"`;
+
+export async function listGroups() {
+  return getDb()
+    .select({ id: groups.id, name: groups.name })
+    .from(groups)
+    .orderBy(groupNameOrder, groups.id);
+}
+
+export async function listContactGroups(contactId: number) {
+  return getDb()
+    .select({ id: groups.id, name: groups.name })
+    .from(contactGroups)
+    .innerJoin(groups, eq(groups.id, contactGroups.groupId))
+    .where(eq(contactGroups.contactId, contactId))
+    .orderBy(groupNameOrder, groups.id);
+}
+
+export async function listGroupsWithCounts() {
+  return getDb()
+    .select({
+      id: groups.id,
+      name: groups.name,
+      contactCount: count(contactGroups.contactId),
+    })
+    .from(groups)
+    .leftJoin(contactGroups, eq(contactGroups.groupId, groups.id))
+    .groupBy(groups.id)
+    .orderBy(groupNameOrder, groups.id);
 }

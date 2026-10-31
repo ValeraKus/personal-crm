@@ -7,3 +7,10 @@ export function parseContactId(value: unknown): number | null {
   const id = Number(text);
   return id >= 1 && id <= MAX_INTEGER_ID ? id : null;
 }
+
+// Reads the repeated `group` URL parameter: valid ids only, without repeats, in the given order
+export function parseGroupIds(value: string | string[] | undefined): number[] {
+  const values = value === undefined ? [] : Array.isArray(value) ? value : [value];
+  const ids = values.map(parseContactId).filter((id): id is number => id !== null);
+  return [...new Set(ids)];
+}

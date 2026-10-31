@@ -9,7 +9,14 @@ import { Spinner } from "@/components/ui/spinner";
 
 const SEARCH_DELAY_MS = 250;
 
-export function ContactSearch({ query }: { query: string }) {
+// groupIds keep the group filter while the text in the search field changes
+export function ContactSearch({
+  query,
+  groupIds,
+}: {
+  query: string;
+  groupIds: number[];
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -18,23 +25,31 @@ export function ContactSearch({ query }: { query: string }) {
   // The address changed from outside (e.g. a link to the full list): show the new query
   useEffect(() => {
     const input = inputRef.current;
-    if (input && document.activeElement !== input && input.value.trim() !== query) {
+    if (
+      input &&
+      document.activeElement !== input &&
+      input.value.trim() !== query
+    ) {
       input.value = query;
     }
   }, [query]);
 
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
-  function search(value: string) {
+  function runSearch(value: string) {
     clearTimeout(timerRef.current);
     const nextQuery = value.trim();
-    const url = nextQuery ? `/?q=${encodeURIComponent(nextQuery)}` : "/";
+    const params = new URLSearchParams();
+    if (nextQuery) params.set("q", nextQuery);
+    for (const id of groupIds) params.append("group", String(id));
+    const search = params.toString();
+    const url = search ? `/?${search}` : "/";
     startTransition(() => router.replace(url, { scroll: false }));
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    search(inputRef.current?.value ?? "");
+    runSearch(inputRef.current?.value ?? "");
   }
 
   return (
@@ -43,6 +58,9 @@ export function ContactSearch({ query }: { query: string }) {
         name="search"
         className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink"
       />
+      {groupIds.map((id) => (
+        <input key={id} type="hidden" name="group" value={id} />
+      ))}
       <Input
         ref={inputRef}
         type="search"
@@ -55,7 +73,10 @@ export function ContactSearch({ query }: { query: string }) {
         onChange={(event) => {
           const value = event.currentTarget.value;
           clearTimeout(timerRef.current);
-          timerRef.current = setTimeout(() => search(value), SEARCH_DELAY_MS);
+          timerRef.current = setTimeout(
+            () => runSearch(value),
+            SEARCH_DELAY_MS,
+          );
         }}
       />
       {isPending ? (

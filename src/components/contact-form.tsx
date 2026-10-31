@@ -1,19 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { startTransition, useActionState, useState, type FormEvent } from "react";
+import {
+  startTransition,
+  useActionState,
+  useState,
+  type FormEvent,
+} from "react";
 
 import type { ContactFormState } from "@/app/actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { isFrequency } from "@/lib/keep-in-touch";
-import type { ContactField } from "@/lib/validation";
+import {
+  foldGroupName,
+  groupNameSchema,
+  type ContactField,
+} from "@/lib/validation";
 
 // Radio items cannot have an empty value, so "not set" is "none" here and empty in the submitted form
 const FREQUENCY_OPTIONS = [
@@ -25,16 +40,67 @@ const FREQUENCY_OPTIONS = [
 ] as const;
 
 type ContactFormProps = {
-  action: (state: ContactFormState, formData: FormData) => Promise<ContactFormState>;
+  action: (
+    state: ContactFormState,
+    formData: FormData,
+  ) => Promise<ContactFormState>;
   defaultValues?: Partial<Record<ContactField, string | number | null>>;
   submitLabel: string;
   cancelHref: string;
+  groups: { id: number; name: string }[];
+  defaultGroupIds?: number[];
 };
 
-export function ContactForm({ action, defaultValues, submitLabel, cancelHref }: ContactFormProps) {
+export function ContactForm({
+  action,
+  defaultValues,
+  submitLabel,
+  cancelHref,
+  groups,
+  defaultGroupIds = [],
+}: ContactFormProps) {
   const [state, formAction, isPending] = useActionState(action, {});
   const initialFrequency = defaultValues?.keepInTouchFrequency;
-  const [frequency, setFrequency] = useState(isFrequency(initialFrequency) ? initialFrequency : "none");
+  const [frequency, setFrequency] = useState(
+    isFrequency(initialFrequency) ? initialFrequency : "none",
+  );
+
+  // Group choices live here, not in the DOM, so they survive a form error. New names are only
+  // created on the server when the contact is saved.
+  const [checkedGroupIds, setCheckedGroupIds] = useState(
+    new Set(defaultGroupIds),
+  );
+  const [newGroups, setNewGroups] = useState<string[]>([]);
+  const [newGroupText, setNewGroupText] = useState("");
+  const [newGroupError, setNewGroupError] = useState<string>();
+
+  function toggleGroup(id: number, checked: boolean) {
+    setCheckedGroupIds((current) => {
+      const next = new Set(current);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  function addNewGroup() {
+    const parsed = groupNameSchema.safeParse(newGroupText);
+    if (!parsed.success) {
+      setNewGroupError(parsed.error.issues[0].message);
+      return;
+    }
+    const folded = foldGroupName(parsed.data);
+    const existing = groups.find(
+      (group) => foldGroupName(group.name) === folded,
+    );
+    if (existing) {
+      toggleGroup(existing.id, true);
+    } else if (!newGroups.some((name) => foldGroupName(name) === folded)) {
+      setNewGroups([...newGroups, parsed.data]);
+    }
+    setNewGroupText("");
+    setNewGroupError(undefined);
+  }
 
   // Submit manually so React does not clear the fields when the server returns errors.
   // `action` on the form still works if the page is submitted before JavaScript loads.
@@ -61,7 +127,12 @@ export function ContactForm({ action, defaultValues, submitLabel, cancelHref }: 
   }
 
   return (
-    <form action={formAction} onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
+    <form
+      action={formAction}
+      onSubmit={handleSubmit}
+      noValidate
+      className="flex flex-col gap-6"
+    >
       {state.formError ? (
         <Alert variant="destructive">
           <AlertDescription>{state.formError}</AlertDescription>
@@ -71,7 +142,12 @@ export function ContactForm({ action, defaultValues, submitLabel, cancelHref }: 
       <FieldGroup>
         <Field data-invalid={Boolean(state.fieldErrors?.name)}>
           <FieldLabel htmlFor="name">Имя и фамилия *</FieldLabel>
-          <Input {...fieldProps("name")} required autoFocus autoComplete="off" />
+          <Input
+            {...fieldProps("name")}
+            required
+            autoFocus
+            autoComplete="off"
+          />
           {errorFor("name")}
         </Field>
 
@@ -121,7 +197,9 @@ export function ContactForm({ action, defaultValues, submitLabel, cancelHref }: 
         </div>
 
         <Field data-invalid={Boolean(state.fieldErrors?.keepInTouchDays)}>
-          <FieldLabel id="keepInTouchFrequency-label">Как часто общаться</FieldLabel>
+          <FieldLabel id="keepInTouchFrequency-label">
+            Как часто общаться
+          </FieldLabel>
           <input
             type="hidden"
             name="keepInTouchFrequency"
@@ -135,8 +213,14 @@ export function ContactForm({ action, defaultValues, submitLabel, cancelHref }: 
           >
             {FREQUENCY_OPTIONS.map((option) => (
               <div key={option.value} className="flex items-center gap-3">
-                <RadioGroupItem value={option.value} id={`frequency-${option.value}`} />
-                <Label htmlFor={`frequency-${option.value}`} className="text-16 font-normal">
+                <RadioGroupItem
+                  value={option.value}
+                  id={`frequency-${option.value}`}
+                />
+                <Label
+                  htmlFor={`frequency-${option.value}`}
+                  className="text-16 font-normal"
+                >
                   {option.label}
                 </Label>
               </div>
@@ -146,7 +230,11 @@ export function ContactForm({ action, defaultValues, submitLabel, cancelHref }: 
               <Label htmlFor="frequency-days" className="text-16 font-normal">
                 Свой срок
               </Label>
-              <span className={frequency === "days" ? "flex items-center gap-2" : "hidden"}>
+              <span
+                className={
+                  frequency === "days" ? "flex items-center gap-2" : "hidden"
+                }
+              >
                 <span className="text-16 text-ink-soft">Раз в</span>
                 <Input
                   {...fieldProps("keepInTouchDays")}
@@ -161,6 +249,84 @@ export function ContactForm({ action, defaultValues, submitLabel, cancelHref }: 
             </div>
           </RadioGroup>
           {errorFor("keepInTouchDays")}
+        </Field>
+
+        <Field data-invalid={Boolean(newGroupError ?? state.groupsError)}>
+          <FieldLabel id="groups-label">Группы</FieldLabel>
+          {[...checkedGroupIds].map((id) => (
+            <input key={id} type="hidden" name="groupIds" value={id} />
+          ))}
+          {newGroups.map((name) => (
+            <input key={name} type="hidden" name="newGroups" value={name} />
+          ))}
+          {groups.length === 0 && newGroups.length === 0 ? (
+            <p className="text-14 text-ink-muted">
+              Групп пока нет. Впишите название, чтобы создать первую
+            </p>
+          ) : (
+            <div
+              role="group"
+              aria-labelledby="groups-label"
+              className="flex flex-col gap-3"
+            >
+              {groups.map((group) => (
+                <div key={group.id} className="flex items-center gap-3">
+                  <Checkbox
+                    id={`group-${group.id}`}
+                    checked={checkedGroupIds.has(group.id)}
+                    onCheckedChange={(checked) =>
+                      toggleGroup(group.id, checked === true)
+                    }
+                  />
+                  <Label
+                    htmlFor={`group-${group.id}`}
+                    className="text-16 font-normal"
+                  >
+                    {group.name}
+                  </Label>
+                </div>
+              ))}
+              {newGroups.map((name, index) => (
+                <div key={name} className="flex items-center gap-3">
+                  <Checkbox
+                    id={`new-group-${index}`}
+                    checked
+                    onCheckedChange={() =>
+                      setNewGroups(newGroups.filter((item) => item !== name))
+                    }
+                  />
+                  <Label
+                    htmlFor={`new-group-${index}`}
+                    className="text-16 font-normal"
+                  >
+                    {name} <span className="text-ink-faint">(новая)</span>
+                  </Label>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-3">
+            <Input
+              value={newGroupText}
+              onChange={(event) => setNewGroupText(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  addNewGroup();
+                }
+              }}
+              placeholder="Новая группа"
+              aria-label="Новая группа"
+              aria-invalid={newGroupError ? true : undefined}
+              autoComplete="off"
+            />
+            <Button type="button" variant="outline" onClick={addNewGroup}>
+              Добавить
+            </Button>
+          </div>
+          {(newGroupError ?? state.groupsError) ? (
+            <FieldError>{newGroupError ?? state.groupsError}</FieldError>
+          ) : null}
         </Field>
       </FieldGroup>
 

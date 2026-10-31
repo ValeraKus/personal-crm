@@ -11,8 +11,13 @@ import { NoteForm } from "@/components/note-form";
 import { PixelIcon } from "@/components/pixel-icon";
 import { Button } from "@/components/ui/button";
 import { Window } from "@/components/window";
-import { getContact, listNotes } from "@/db/queries";
-import { formatDueDate, formatNoteDate, formatOverdue, pluralize } from "@/lib/format";
+import { getContact, listContactGroups, listNotes } from "@/db/queries";
+import {
+  formatDueDate,
+  formatNoteDate,
+  formatOverdue,
+  pluralize,
+} from "@/lib/format";
 import { parseContactId } from "@/lib/ids";
 import { getTermStatus, isFrequency } from "@/lib/keep-in-touch";
 
@@ -34,9 +39,14 @@ export async function generateMetadata({
   return { title: contact.name };
 }
 
-export default async function ContactPage({ params }: PageProps<"/contacts/[id]">) {
+export default async function ContactPage({
+  params,
+}: PageProps<"/contacts/[id]">) {
   const contact = await loadContact(params);
-  const notes = await listNotes(contact.id);
+  const [notes, contactGroups] = await Promise.all([
+    listNotes(contact.id),
+    listContactGroups(contact.id),
+  ]);
   const term = isFrequency(contact.keepInTouchFrequency)
     ? getTermStatus({
         frequency: contact.keepInTouchFrequency,
@@ -58,7 +68,9 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
               {contact.name}
             </h1>
             {contact.about ? (
-              <p className="mt-1.5 text-15 text-ink-muted sm:text-16">{contact.about}</p>
+              <p className="mt-1.5 text-15 text-ink-muted sm:text-16">
+                {contact.about}
+              </p>
             ) : null}
           </div>
           <div className="flex shrink-0 gap-2 sm:gap-3">
@@ -90,9 +102,18 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
                     `связаться до ${formatDueDate(term.dueDate)}`
                   )}
                 </span>
-                <MarkContactedButton contactId={contact.id} name={contact.name} variant="card" />
+                <MarkContactedButton
+                  contactId={contact.id}
+                  name={contact.name}
+                  variant="card"
+                />
               </span>
             ) : null}
+          </DetailRow>
+          <DetailRow label="Группы">
+            {contactGroups.length > 0
+              ? contactGroups.map((group) => group.name).join(", ")
+              : null}
           </DetailRow>
           <DetailRow label="Откуда знакомы">
             {contact.howWeMet ? (
@@ -130,7 +151,8 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
         aside={
           notes.length > 0 ? (
             <span className="font-pixel text-8 text-ink-soft sm:text-9">
-              {notes.length} {pluralize(notes.length, ["заметка", "заметки", "заметок"])}
+              {notes.length}{" "}
+              {pluralize(notes.length, ["заметка", "заметки", "заметок"])}
             </span>
           ) : null
         }
@@ -165,10 +187,18 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
   );
 }
 
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+function DetailRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="contents">
-      <dt className="font-pixel text-9 leading-normal text-ink-faint sm:pt-1">{label}</dt>
+      <dt className="font-pixel text-9 leading-normal text-ink-faint sm:pt-1">
+        {label}
+      </dt>
       <dd className="-mt-2 text-16 sm:mt-0">
         {children ?? <span className="text-ink-faint">Не указано</span>}
       </dd>

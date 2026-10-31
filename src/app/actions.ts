@@ -18,13 +18,10 @@ export type ContactFormState = {
 };
 
 export type NoteFormState =
-  | { status: "idle" }
-  | { status: "error"; message: string }
-  | { status: "saved"; savedAt: number };
+  { status: "idle" } | { status: "error"; message: string } | { status: "saved"; savedAt: number };
 
 export type MarkContactedResult =
-  | { status: "marked"; noteId: number; name: string }
-  | { status: "error"; message: string };
+  { status: "marked"; noteId: number; name: string } | { status: "error"; message: string };
 
 export type UndoMarkContactedResult = { status: "undone" } | { status: "error"; message: string };
 
@@ -32,9 +29,7 @@ export type UndoMarkContactedResult = { status: "undone" } | { status: "error"; 
 const UNDO_WINDOW_SECONDS = 60;
 
 export type DeleteContactState =
-  | { status: "idle" }
-  | { status: "error"; message: string }
-  | { status: "deleted" };
+  { status: "idle" } | { status: "error"; message: string } | { status: "deleted" };
 
 const CONTACT_FIELDS: ContactField[] = [
   "name",

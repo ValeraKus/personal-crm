@@ -34,7 +34,9 @@ type ContactFormProps = {
 export function ContactForm({ action, defaultValues, submitLabel, cancelHref }: ContactFormProps) {
   const [state, formAction, isPending] = useActionState(action, {});
   const initialFrequency = defaultValues?.keepInTouchFrequency;
-  const [frequency, setFrequency] = useState(isFrequency(initialFrequency) ? initialFrequency : "none");
+  const [frequency, setFrequency] = useState(
+    isFrequency(initialFrequency) ? initialFrequency : "none",
+  );
 
   // Submit manually so React does not clear the fields when the server returns errors.
   // `action` on the form still works if the page is submitted before JavaScript loads.

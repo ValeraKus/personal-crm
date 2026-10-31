@@ -1,0 +1,95 @@
+# Every pull request: lint, format, types, unit tests (Vitest), e2e tests (Playwright) on a real
+# PostgreSQL, and the Docker image build. main is protected: a PR merges only when all jobs are green.
+# The job names are the required checks of main: rename a job only together with the protection rule.
+name: CI
+
+on:
+  pull_request:
+
+# A new push to the same PR cancels the CI run of the previous push
+concurrency:
+  group: ci-${{ github.head_ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, format, types, unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      # pnpm version comes from "packageManager" in package.json
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Format
+        run: pnpm format:check
+      - name: Types
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test
+
+  e2e:
+    name: e2e tests
+    runs-on: ubuntu-24.04
+    # A throwaway PostgreSQL that lives only while this job runs, with no real data.
+    # It accepts connections without a password, so there is no secret to keep.
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: personal_crm
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d personal_crm"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # The tests recreate the personal_crm_e2e database next to it (see e2e/test-database.ts)
+      DATABASE_URL: postgres://postgres@localhost:5432/personal_crm
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install the browser for the tests
+        run: pnpm exec playwright install --with-deps chromium
+      - name: e2e tests
+        run: pnpm test:e2e
+      # A failed test leaves a screenshot and a trace: download them from the run page
+      - name: Upload the test report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  image:
+    name: Docker image
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      # The same image as the deploy builds, but it is not pushed anywhere
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

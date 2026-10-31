@@ -24,7 +24,9 @@ export default function ErrorPage({
         </h1>
         <p className="max-w-md text-15 leading-body text-ink-soft">
           Скорее всего, не запущена база данных. Запустите её командой{" "}
-          <code className="border border-ink bg-paper px-1 py-0.5 text-14">docker compose up -d</code>{" "}
+          <code className="border border-ink bg-paper px-1 py-0.5 text-14">
+            docker compose up -d
+          </code>{" "}
           и попробуйте снова.
         </p>
         <Button className="mt-2" onClick={() => retry()}>

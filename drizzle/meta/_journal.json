@@ -15,6 +15,13 @@
       "when": 1792864569797,
       "tag": "0001_superb_santa_claus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793449309915,
+      "tag": "0002_perpetual_millenium_guard",
+      "breakpoints": true
     }
   ]
 }

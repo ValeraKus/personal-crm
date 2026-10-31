@@ -11,7 +11,7 @@ import { NoteForm } from "@/components/note-form";
 import { PixelIcon } from "@/components/pixel-icon";
 import { Button } from "@/components/ui/button";
 import { Window } from "@/components/window";
-import { getContact, listNotes } from "@/db/queries";
+import { getContact, listContactGroups, listNotes } from "@/db/queries";
 import { formatDueDate, formatNoteDate, formatOverdue, pluralize } from "@/lib/format";
 import { parseContactId } from "@/lib/ids";
 import { getTermStatus, isFrequency } from "@/lib/keep-in-touch";
@@ -34,7 +34,10 @@ export async function generateMetadata({ params }: PageProps<"/contacts/[id]">):
 
 export default async function ContactPage({ params }: PageProps<"/contacts/[id]">) {
   const contact = await loadContact(params);
-  const notes = await listNotes(contact.id);
+  const [notes, contactGroups] = await Promise.all([
+    listNotes(contact.id),
+    listContactGroups(contact.id),
+  ]);
   const term = isFrequency(contact.keepInTouchFrequency)
     ? getTermStatus({
         frequency: contact.keepInTouchFrequency,
@@ -91,6 +94,9 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
                 <MarkContactedButton contactId={contact.id} name={contact.name} variant="card" />
               </span>
             ) : null}
+          </DetailRow>
+          <DetailRow label="Группы">
+            {contactGroups.length > 0 ? contactGroups.map((group) => group.name).join(", ") : null}
           </DetailRow>
           <DetailRow label="Откуда знакомы">
             {contact.howWeMet ? (

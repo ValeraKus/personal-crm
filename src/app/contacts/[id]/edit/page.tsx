@@ -5,7 +5,7 @@ import { updateContact } from "@/app/actions";
 import { BackLink } from "@/components/back-link";
 import { ContactForm } from "@/components/contact-form";
 import { Window } from "@/components/window";
-import { getContact } from "@/db/queries";
+import { getContact, listContactGroups, listGroups } from "@/db/queries";
 import { parseContactId } from "@/lib/ids";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +19,8 @@ export default async function EditContactPage({ params }: PageProps<"/contacts/[
   if (id === null) notFound();
   const contact = await getContact(id);
   if (!contact) notFound();
+
+  const [groups, contactGroups] = await Promise.all([listGroups(), listContactGroups(contact.id)]);
 
   const cardHref = `/contacts/${contact.id}`;
 
@@ -39,6 +41,8 @@ export default async function EditContactPage({ params }: PageProps<"/contacts/[
             }}
             submitLabel="Сохранить"
             cancelHref={cardHref}
+            groups={groups}
+            defaultGroupIds={contactGroups.map((group) => group.id)}
           />
         </div>
       </Window>

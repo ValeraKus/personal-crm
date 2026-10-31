@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Reports of the e2e tests: a failed run leaves the bundled trace viewer here
+    "playwright-report/**",
+    "test-results/**",
   ]),
 ]);
 

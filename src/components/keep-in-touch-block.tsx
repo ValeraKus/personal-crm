@@ -4,13 +4,7 @@ import { ContactAvatar } from "@/components/contact-avatar";
 import { MarkContactedButton } from "@/components/mark-contacted-button";
 import { Window } from "@/components/window";
 import { formatOverdue } from "@/lib/format";
-
-export type OverdueContact = {
-  id: number;
-  name: string;
-  label: string;
-  overdueDays: number;
-};
+import type { OverdueContact } from "@/lib/keep-in-touch";
 
 // Overdue contacts above the list, styled like the contact list window
 export function KeepInTouchBlock({ contacts }: { contacts: OverdueContact[] }) {

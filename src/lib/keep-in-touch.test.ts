@@ -4,7 +4,12 @@
 
 import { describe, expect, it } from "vitest";
 
-import { frequencyLabel, getTermStatus, type Frequency } from "@/lib/keep-in-touch";
+import {
+  frequencyLabel,
+  getTermStatus,
+  overdueContacts,
+  type Frequency,
+} from "@/lib/keep-in-touch";
 
 function date(year: number, month: number, day: number, hours = 0, minutes = 0) {
   return new Date(year, month - 1, day, hours, minutes);
@@ -48,6 +53,16 @@ describe("getTermStatus: from which date the term counts", () => {
   it("counts from the moment the frequency was set when there are no notes", () => {
     const status = getTermStatus(term("month", date(2026, 11, 1, 9, 0)));
     expect(status?.dueDate).toEqual(date(2026, 12, 1));
+  });
+
+  it("counts again from a new note, so an overdue contact is no longer overdue", () => {
+    const now = date(2026, 11, 20, 10, 0);
+    const overdue = term("month", date(2026, 9, 1));
+    expect(getTermStatus(overdue, now)?.overdueDays).toBeGreaterThan(0);
+
+    const status = getTermStatus({ ...overdue, lastNoteAt: now }, now);
+    expect(status?.dueDate).toEqual(date(2026, 12, 20));
+    expect(status?.overdueDays).toBeLessThanOrEqual(0);
   });
 });
 
@@ -94,5 +109,61 @@ describe("getTermStatus: overdue", () => {
       date(2026, 11, 1),
     );
     expect(status).toBeNull();
+  });
+});
+
+describe("overdueContacts: who is in the home block and in which order", () => {
+  // 20 November 2026
+  const now = date(2026, 11, 20, 10, 0);
+
+  // Rows come from the database in the order of the general list, alphabetical
+  function row(id: number, name: string, frequency: Frequency | null, since: Date | null) {
+    return {
+      id,
+      name,
+      keepInTouchFrequency: frequency,
+      keepInTouchDays: null,
+      keepInTouchSince: since,
+      lastNoteAt: null,
+    };
+  }
+
+  it("puts the most overdue contact first", () => {
+    const rows = [
+      // Due 14 November: 6 days overdue
+      row(1, "Анна", "week", date(2026, 11, 7)),
+      // Due 10 November: 10 days overdue
+      row(2, "Борис", "year", date(2025, 11, 10)),
+    ];
+    expect(overdueContacts(rows, now)).toEqual([
+      { id: 2, name: "Борис", label: "Раз в год", overdueDays: 10 },
+      { id: 1, name: "Анна", label: "Раз в неделю", overdueDays: 6 },
+    ]);
+  });
+
+  it("keeps the alphabetical order of contacts that are equally overdue", () => {
+    const rows = [
+      // Due 16 November: 4 days overdue
+      row(1, "Вера", "week", date(2026, 11, 9)),
+      row(2, "Глеб", "week", date(2026, 11, 9)),
+      // Due 11 November: 9 days overdue
+      row(3, "Дина", "week", date(2026, 11, 4)),
+    ];
+    expect(overdueContacts(rows, now).map((contact) => contact.name)).toEqual([
+      "Дина",
+      "Вера",
+      "Глеб",
+    ]);
+  });
+
+  it("leaves out contacts that are due today or have no frequency", () => {
+    const rows = [
+      // Due 20 November, today
+      row(1, "Анна", "week", date(2026, 11, 13)),
+      row(2, "Борис", null, null),
+      // Due 19 November: 1 day overdue
+      row(3, "Вера", "week", date(2026, 11, 12)),
+    ];
+    expect(overdueContacts(rows, now).map((contact) => contact.name)).toEqual(["Вера"]);
   });
 });

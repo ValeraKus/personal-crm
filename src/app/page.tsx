@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AddedContactNotice } from "@/components/added-contact-notice";
 import { ContactAvatar } from "@/components/contact-avatar";
 import { ContactSearch } from "@/components/contact-search";
-import { KeepInTouchBlock, type OverdueContact } from "@/components/keep-in-touch-block";
+import { KeepInTouchBlock } from "@/components/keep-in-touch-block";
 import { PixelIcon } from "@/components/pixel-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import {
 } from "@/db/queries";
 import { formatContactCount, groupLetter } from "@/lib/format";
 import { parseContactId, parseGroupIds } from "@/lib/ids";
-import { getTermStatus, isFrequency } from "@/lib/keep-in-touch";
+import { overdueContacts } from "@/lib/keep-in-touch";
 import { cn } from "@/lib/utils";
 
 // Always read fresh data from the database: any browser sees the same contacts
@@ -37,32 +37,8 @@ function groupByLetter(items: ContactListItem[]) {
   return groups;
 }
 
-// Overdue contacts, most overdue first; the stable sort keeps the alphabetical order of equals
 async function listOverdueContacts() {
-  const rows = await listContactsWithTerm();
-  const now = new Date();
-  const overdue: OverdueContact[] = [];
-  for (const row of rows) {
-    if (!isFrequency(row.keepInTouchFrequency)) continue;
-    const status = getTermStatus(
-      {
-        frequency: row.keepInTouchFrequency,
-        days: row.keepInTouchDays,
-        since: row.keepInTouchSince,
-        lastNoteAt: row.lastNoteAt,
-      },
-      now,
-    );
-    if (status && status.overdueDays > 0) {
-      overdue.push({
-        id: row.id,
-        name: row.name,
-        label: status.label,
-        overdueDays: status.overdueDays,
-      });
-    }
-  }
-  return overdue.sort((a, b) => b.overdueDays - a.overdueDays);
+  return overdueContacts(await listContactsWithTerm(), new Date());
 }
 
 export default async function ContactsPage({ searchParams }: PageProps<"/">) {

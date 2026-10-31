@@ -1,15 +1,6 @@
 import "server-only";
 
-import {
-  and,
-  count,
-  desc,
-  eq,
-  isNotNull,
-  max,
-  sql,
-  type SQL,
-} from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, max, sql, type SQL } from "drizzle-orm";
 import { cache } from "react";
 
 import { getDb } from "./index";
@@ -35,8 +26,7 @@ function nameSearchCondition(query: string): SQL | undefined {
   if (words.length === 0) return undefined;
   return and(
     ...words.map(
-      (word) =>
-        sql`${normalizedName} like ${`%${escapeLike(normalizeSearchWord(word))}%`}`,
+      (word) => sql`${normalizedName} like ${`%${escapeLike(normalizeSearchWord(word))}%`}`,
     ),
   );
 }
@@ -77,10 +67,7 @@ export async function countContacts() {
 
 // Cached per request: the page and its metadata both read the same contact
 export const getContact = cache(async (id: number) => {
-  const [contact] = await getDb()
-    .select()
-    .from(contacts)
-    .where(eq(contacts.id, id));
+  const [contact] = await getDb().select().from(contacts).where(eq(contacts.id, id));
   return contact;
 });
 

@@ -45,19 +45,13 @@ export function GroupRow({ id, name, contactCount }: GroupRowProps) {
             >
               {name}
             </Link>
-            <div className="text-14 text-ink-muted">
-              {formatContactCount(contactCount)}
-            </div>
+            <div className="text-14 text-ink-muted">{formatContactCount(contactCount)}</div>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setEditing(true)}>
               Переименовать
             </Button>
-            <DeleteGroupButton
-              id={id}
-              name={name}
-              contactCount={contactCount}
-            />
+            <DeleteGroupButton id={id} name={name} contactCount={contactCount} />
           </div>
         </>
       )}
@@ -65,15 +59,7 @@ export function GroupRow({ id, name, contactCount }: GroupRowProps) {
   );
 }
 
-function RenameForm({
-  id,
-  name,
-  onDone,
-}: {
-  id: number;
-  name: string;
-  onDone: () => void;
-}) {
+function RenameForm({ id, name, onDone }: { id: number; name: string; onDone: () => void }) {
   const [state, formAction, isPending] = useActionState(
     async (previous: RenameGroupState, formData: FormData) => {
       const next = await renameGroup(id, previous, formData);
@@ -103,12 +89,7 @@ function RenameForm({
           {isPending ? <Spinner /> : null}
           Сохранить
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onDone}
-          disabled={isPending}
-        >
+        <Button type="button" variant="ghost" onClick={onDone} disabled={isPending}>
           Отмена
         </Button>
       </div>
@@ -142,10 +123,7 @@ function DeleteGroupButton({ id, name, contactCount }: GroupRowProps) {
       <Button variant="destructive" onClick={() => setOpen(true)}>
         Удалить
       </Button>
-      <AlertDialog
-        open={open}
-        onOpenChange={(next) => !isPending && setOpen(next)}
-      >
+      <AlertDialog open={open} onOpenChange={(next) => !isPending && setOpen(next)}>
         <AlertDialogContent>
           <Window title="удаление" bar="accent" controls={2}>
             <div className="flex flex-col gap-5 p-4 sm:p-6">
@@ -161,9 +139,7 @@ function DeleteGroupButton({ id, name, contactCount }: GroupRowProps) {
                 </Alert>
               ) : null}
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={isPending}>
-                  Отмена
-                </AlertDialogCancel>
+                <AlertDialogCancel disabled={isPending}>Отмена</AlertDialogCancel>
                 <Button
                   variant="destructive"
                   disabled={isPending}

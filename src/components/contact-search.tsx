@@ -10,13 +10,7 @@ import { Spinner } from "@/components/ui/spinner";
 const SEARCH_DELAY_MS = 250;
 
 // groupIds keep the group filter while the text in the search field changes
-export function ContactSearch({
-  query,
-  groupIds,
-}: {
-  query: string;
-  groupIds: number[];
-}) {
+export function ContactSearch({ query, groupIds }: { query: string; groupIds: number[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -25,11 +19,7 @@ export function ContactSearch({
   // The address changed from outside (e.g. a link to the full list): show the new query
   useEffect(() => {
     const input = inputRef.current;
-    if (
-      input &&
-      document.activeElement !== input &&
-      input.value.trim() !== query
-    ) {
+    if (input && document.activeElement !== input && input.value.trim() !== query) {
       input.value = query;
     }
   }, [query]);
@@ -73,10 +63,7 @@ export function ContactSearch({
         onChange={(event) => {
           const value = event.currentTarget.value;
           clearTimeout(timerRef.current);
-          timerRef.current = setTimeout(
-            () => runSearch(value),
-            SEARCH_DELAY_MS,
-          );
+          timerRef.current = setTimeout(() => runSearch(value), SEARCH_DELAY_MS);
         }}
       />
       {isPending ? (

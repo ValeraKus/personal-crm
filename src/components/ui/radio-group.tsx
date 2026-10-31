@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { RadioGroup as RadioGroupPrimitive } from "radix-ui"
+import * as React from "react";
+import { RadioGroup as RadioGroupPrimitive } from "radix-ui";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 function RadioGroup({
   className,
@@ -15,7 +15,7 @@ function RadioGroup({
       className={cn("grid w-full gap-2", className)}
       {...props}
     />
-  )
+  );
 }
 
 // Square pixel radio: filled ink square inside when checked
@@ -28,7 +28,7 @@ function RadioGroupItem({
       data-slot="radio-group-item"
       className={cn(
         "relative flex size-5 shrink-0 items-center justify-center border-2 border-ink bg-white outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-violet disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger",
-        className
+        className,
       )}
       {...props}
     >
@@ -36,7 +36,7 @@ function RadioGroupItem({
         <span className="block size-2.5 bg-ink" />
       </RadioGroupPrimitive.Indicator>
     </RadioGroupPrimitive.Item>
-  )
+  );
 }
 
-export { RadioGroup, RadioGroupItem }
+export { RadioGroup, RadioGroupItem };

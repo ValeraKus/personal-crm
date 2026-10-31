@@ -25,24 +25,18 @@ export type ContactFormState = {
 };
 
 export type NoteFormState =
-  | { status: "idle" }
-  | { status: "error"; message: string }
-  | { status: "saved"; savedAt: number };
+  { status: "idle" } | { status: "error"; message: string } | { status: "saved"; savedAt: number };
 
 export type MarkContactedResult =
-  | { status: "marked"; noteId: number; name: string }
-  | { status: "error"; message: string };
+  { status: "marked"; noteId: number; name: string } | { status: "error"; message: string };
 
-export type UndoMarkContactedResult =
-  { status: "undone" } | { status: "error"; message: string };
+export type UndoMarkContactedResult = { status: "undone" } | { status: "error"; message: string };
 
 // How long after the check mark it can be undone (the toast lasts 5 seconds)
 const UNDO_WINDOW_SECONDS = 60;
 
 export type DeleteContactState =
-  | { status: "idle" }
-  | { status: "error"; message: string }
-  | { status: "deleted" };
+  { status: "idle" } | { status: "error"; message: string } | { status: "deleted" };
 
 const CONTACT_FIELDS: ContactField[] = [
   "name",
@@ -60,9 +54,7 @@ function readContactForm(formData: FormData) {
   );
 }
 
-function firstErrorPerField(
-  error: z.ZodError,
-): ContactFormState["fieldErrors"] {
+function firstErrorPerField(error: z.ZodError): ContactFormState["fieldErrors"] {
   const result: Partial<Record<ContactField, string>> = {};
   for (const issue of error.issues) {
     const field = issue.path[0] as ContactField;
@@ -81,9 +73,7 @@ function readGroups(formData: FormData) {
   for (const raw of formData.getAll("newGroups")) {
     const parsed = groupNameSchema.safeParse(String(raw));
     if (!parsed.success) return { error: parsed.error.issues[0].message };
-    if (
-      !names.some((name) => foldGroupName(name) === foldGroupName(parsed.data))
-    ) {
+    if (!names.some((name) => foldGroupName(name) === foldGroupName(parsed.data))) {
       names.push(parsed.data);
     }
   }
@@ -113,16 +103,12 @@ async function replaceContactGroups(
     const [group] = await tx
       .select({ id: groups.id })
       .from(groups)
-      .where(
-        sql`replace(lower(${groups.name}), 'ё', 'е') = ${foldGroupName(name)}`,
-      );
+      .where(sql`replace(lower(${groups.name}), 'ё', 'е') = ${foldGroupName(name)}`);
     if (group) ids.add(group.id);
   }
   await tx.delete(contactGroups).where(eq(contactGroups.contactId, contactId));
   if (ids.size > 0) {
-    await tx
-      .insert(contactGroups)
-      .values([...ids].map((groupId) => ({ contactId, groupId })));
+    await tx.insert(contactGroups).values([...ids].map((groupId) => ({ contactId, groupId })));
   }
 }
 
@@ -140,9 +126,7 @@ export async function createContact(
   let id: number;
   try {
     // The term counts from now if a frequency is chosen
-    const keepInTouchSince = parsed.data.keepInTouchFrequency
-      ? new Date()
-      : null;
+    const keepInTouchSince = parsed.data.keepInTouchFrequency ? new Date() : null;
     id = await getDb().transaction(async (tx) => {
       const [created] = await tx
         .insert(contacts)
@@ -256,9 +240,7 @@ export async function addNote(
 // Notes go away together with the contact: the foreign key deletes them on cascade.
 // No revalidatePath here: it would re-render the current page, the card of the deleted contact,
 // as "not found". The client goes to the list itself, and the list always reads fresh data.
-export async function deleteContact(
-  rawId: number,
-): Promise<DeleteContactState> {
+export async function deleteContact(rawId: number): Promise<DeleteContactState> {
   const id = parseContactId(rawId);
   if (id === null) {
     return { status: "error", message: "Контакт не найден." };
@@ -279,9 +261,7 @@ export async function deleteContact(
 }
 
 // The "contacted" check mark is an ordinary note, so the term counts from it like from any note
-export async function markContacted(
-  rawContactId: number,
-): Promise<MarkContactedResult> {
+export async function markContacted(rawContactId: number): Promise<MarkContactedResult> {
   const contactId = parseContactId(rawContactId);
   if (contactId === null) {
     return { status: "error", message: "Контакт не найден." };
@@ -313,9 +293,7 @@ export async function markContacted(
 
 // Deletes only a fresh "contacted" note: the text and the age are checked here, on the server,
 // so any other note stays untouched even if this is called with its id
-export async function undoMarkContacted(
-  rawNoteId: number,
-): Promise<UndoMarkContactedResult> {
+export async function undoMarkContacted(rawNoteId: number): Promise<UndoMarkContactedResult> {
   const noteId = parseContactId(rawNoteId);
   if (noteId === null) {
     return { status: "error", message: "Не удалось отменить" };
@@ -329,10 +307,7 @@ export async function undoMarkContacted(
         and(
           eq(notes.id, noteId),
           eq(notes.body, CONTACTED_NOTE),
-          gt(
-            notes.createdAt,
-            sql`now() - make_interval(secs => ${UNDO_WINDOW_SECONDS})`,
-          ),
+          gt(notes.createdAt, sql`now() - make_interval(secs => ${UNDO_WINDOW_SECONDS})`),
         ),
       )
       .returning({ contactId: notes.contactId });
@@ -357,9 +332,7 @@ export type RenameGroupState =
   | { status: "renamed"; savedAt: number };
 
 export type DeleteGroupState =
-  | { status: "idle" }
-  | { status: "error"; message: string }
-  | { status: "deleted" };
+  { status: "idle" } | { status: "error"; message: string } | { status: "deleted" };
 
 export async function renameGroup(
   rawId: number,

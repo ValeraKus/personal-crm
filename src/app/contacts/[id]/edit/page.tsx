@@ -14,18 +14,13 @@ export const metadata: Metadata = {
   title: "Изменить контакт",
 };
 
-export default async function EditContactPage({
-  params,
-}: PageProps<"/contacts/[id]/edit">) {
+export default async function EditContactPage({ params }: PageProps<"/contacts/[id]/edit">) {
   const id = parseContactId((await params).id);
   if (id === null) notFound();
   const contact = await getContact(id);
   if (!contact) notFound();
 
-  const [groups, contactGroups] = await Promise.all([
-    listGroups(),
-    listContactGroups(contact.id),
-  ]);
+  const [groups, contactGroups] = await Promise.all([listGroups(), listContactGroups(contact.id)]);
 
   const cardHref = `/contacts/${contact.id}`;
 

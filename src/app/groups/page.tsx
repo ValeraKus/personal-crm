@@ -18,9 +18,7 @@ export default async function GroupsPage() {
   return (
     <div className="flex flex-col gap-4 sm:gap-5">
       <BackLink href="/">Все контакты</BackLink>
-      <h1 className="font-display text-26 leading-heading uppercase sm:text-38">
-        Группы
-      </h1>
+      <h1 className="font-display text-26 leading-heading uppercase sm:text-38">Группы</h1>
       <Window title="группы.exe" bar="lilac" controls={3} className="mt-2">
         {groups.length === 0 ? (
           <p className="px-4 py-8 text-center text-14 text-ink-muted">

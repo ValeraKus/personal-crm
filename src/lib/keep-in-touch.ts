@@ -99,3 +99,47 @@ export function getTermStatus(term: Term, now = new Date()): TermStatus | null {
     overdueDays: dayNumber(now) - dayNumber(dueDate),
   };
 }
+
+// A contact with a frequency and the date of its last note, as the database returns it
+type TermRow = {
+  id: number;
+  name: string;
+  keepInTouchFrequency: string | null;
+  keepInTouchDays: number | null;
+  keepInTouchSince: Date | null;
+  lastNoteAt: Date | null;
+};
+
+export type OverdueContact = {
+  id: number;
+  name: string;
+  label: string;
+  overdueDays: number;
+};
+
+// Contacts for the home block: only the overdue ones, most overdue first.
+// The rows come in alphabetical order, and the stable sort keeps it for equally overdue contacts.
+export function overdueContacts(rows: TermRow[], now: Date): OverdueContact[] {
+  const overdue: OverdueContact[] = [];
+  for (const row of rows) {
+    if (!isFrequency(row.keepInTouchFrequency)) continue;
+    const status = getTermStatus(
+      {
+        frequency: row.keepInTouchFrequency,
+        days: row.keepInTouchDays,
+        since: row.keepInTouchSince,
+        lastNoteAt: row.lastNoteAt,
+      },
+      now,
+    );
+    if (status && status.overdueDays > 0) {
+      overdue.push({
+        id: row.id,
+        name: row.name,
+        label: status.label,
+        overdueDays: status.overdueDays,
+      });
+    }
+  }
+  return overdue.sort((a, b) => b.overdueDays - a.overdueDays);
+}

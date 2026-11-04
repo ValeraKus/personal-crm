@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { contactSchema, foldGroupName, groupNameSchema } from "@/lib/validation";
+import { chooseNewGroup, contactSchema, foldGroupName, groupNameSchema } from "@/lib/validation";
 
 // Raw values of the contact form, as the browser sends them: every field is text
 function contactForm(fields: { keepInTouchFrequency?: string; keepInTouchDays?: string } = {}) {
@@ -95,5 +95,46 @@ describe("foldGroupName", () => {
 
   it("keeps different names different", () => {
     expect(foldGroupName("Семья")).not.toBe(foldGroupName("Друзья"));
+  });
+});
+
+// What the "Добавить" button of the contact form does with the typed name: scenarios of the
+// "Название группы" and "Группы в форме контакта" requirements in openspec/specs/contact-groups/spec.md
+describe("chooseNewGroup", () => {
+  const tennis = { id: 1, name: "Теннис" };
+  const aunt = { id: 2, name: "Тётя" };
+
+  it.each(["", "   "])("shows an error for the empty name %j", (text) => {
+    expect(chooseNewGroup(text, [], [])).toEqual({
+      kind: "error",
+      message: "Укажите название группы",
+    });
+  });
+
+  it("shows an error for a name longer than 50 characters", () => {
+    expect(chooseNewGroup("а".repeat(51), [], [])).toEqual({
+      kind: "error",
+      message: "Не длиннее 50 символов",
+    });
+  });
+
+  it("adds a new group", () => {
+    expect(chooseNewGroup("Аналитики", [tennis], [])).toEqual({ kind: "new", name: "Аналитики" });
+  });
+
+  it("adds a new group without the spaces around its name", () => {
+    expect(chooseNewGroup("  Теннис  ", [], [])).toEqual({ kind: "new", name: "Теннис" });
+  });
+
+  it("checks the existing group when only the case differs", () => {
+    expect(chooseNewGroup("теннис", [aunt, tennis], [])).toEqual({ kind: "existing", id: 1 });
+  });
+
+  it("checks the existing group when only «е» and «ё» differ", () => {
+    expect(chooseNewGroup("тетя", [tennis, aunt], [])).toEqual({ kind: "existing", id: 2 });
+  });
+
+  it("does nothing when the same new group is already added in the form", () => {
+    expect(chooseNewGroup("аналитики", [tennis], ["Аналитики"])).toEqual({ kind: "repeat" });
   });
 });

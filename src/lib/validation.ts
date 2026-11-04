@@ -67,3 +67,26 @@ export const groupNameSchema = z
 export function foldGroupName(name: string) {
   return name.toLowerCase().replaceAll("ё", "е");
 }
+
+export type NewGroupChoice =
+  | { kind: "error"; message: string }
+  | { kind: "existing"; id: number }
+  | { kind: "new"; name: string }
+  | { kind: "repeat" };
+
+// What the "Добавить" button of the contact form does with the typed name
+export function chooseNewGroup(
+  text: string,
+  groups: { id: number; name: string }[],
+  newGroups: string[],
+): NewGroupChoice {
+  const parsed = groupNameSchema.safeParse(text);
+  if (!parsed.success) {
+    return { kind: "error", message: parsed.error.issues[0].message };
+  }
+  const folded = foldGroupName(parsed.data);
+  const existing = groups.find((group) => foldGroupName(group.name) === folded);
+  if (existing) return { kind: "existing", id: existing.id };
+  if (newGroups.some((name) => foldGroupName(name) === folded)) return { kind: "repeat" };
+  return { kind: "new", name: parsed.data };
+}

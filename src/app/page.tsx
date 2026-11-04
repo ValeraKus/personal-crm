@@ -15,8 +15,14 @@ import {
   listGroups,
   type ContactListItem,
 } from "@/db/queries";
-import { formatContactCount, groupLetter } from "@/lib/format";
-import { parseContactId, parseGroupIds } from "@/lib/ids";
+import { formatContactCount, formatFoundCount, groupLetter } from "@/lib/format";
+import {
+  contactListHref,
+  emptyFilterMessage,
+  selectedGroupIds,
+  toggleGroupId,
+} from "@/lib/group-filter";
+import { parseContactId } from "@/lib/ids";
 import { overdueContacts } from "@/lib/keep-in-touch";
 import { cn } from "@/lib/utils";
 
@@ -46,10 +52,8 @@ export default async function ContactsPage({ searchParams }: PageProps<"/">) {
   const query = typeof params.q === "string" ? params.q.trim() : "";
   const addedId = parseContactId(params.added);
 
-  // Ids from the address that match no group are ignored
   const allGroups = await listGroups();
-  const knownIds = new Set(allGroups.map((group) => group.id));
-  const selectedIds = parseGroupIds(params.group).filter((id) => knownIds.has(id));
+  const selectedIds = selectedGroupIds(params.group, allGroups);
   const filtered = query !== "" || selectedIds.length > 0;
 
   // The block is hidden while searching or filtering, so its query is skipped too
@@ -67,9 +71,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/">) {
         <div className="flex flex-col gap-3">
           <h1 className="font-display text-30 leading-heading uppercase sm:text-44">Контакты</h1>
           <p className="font-pixel text-9 text-ink-faint sm:text-10" aria-live="polite">
-            {filtered
-              ? `Найдено: ${items.length.toLocaleString("ru-RU")} из ${formatContactCount(total)}`
-              : formatContactCount(total)}
+            {filtered ? formatFoundCount(items.length, total) : formatContactCount(total)}
           </p>
         </div>
         <Button asChild size="lg" className="w-full sm:w-auto">
@@ -139,14 +141,6 @@ export default async function ContactsPage({ searchParams }: PageProps<"/">) {
   );
 }
 
-function groupFilterHref(ids: number[], query: string) {
-  const params = new URLSearchParams();
-  if (query) params.set("q", query);
-  for (const id of ids) params.append("group", String(id));
-  const search = params.toString();
-  return search ? `/?${search}` : "/";
-}
-
 // Each button is a plain link to the address with this group added to the choice or removed from it
 function GroupFilter({
   groups,
@@ -161,7 +155,7 @@ function GroupFilter({
     <nav aria-label="Группы" className="flex flex-wrap items-center gap-2">
       <Badge asChild variant={selectedIds.length === 0 ? "default" : "outline"}>
         <Link
-          href={groupFilterHref([], query)}
+          href={contactListHref(query, [])}
           aria-current={selectedIds.length === 0 || undefined}
         >
           Все
@@ -169,12 +163,10 @@ function GroupFilter({
       </Badge>
       {groups.map((group) => {
         const selected = selectedIds.includes(group.id);
-        const next = selected
-          ? selectedIds.filter((id) => id !== group.id)
-          : [...selectedIds, group.id];
+        const next = toggleGroupId(selectedIds, group.id);
         return (
           <Badge key={group.id} asChild variant={selected ? "default" : "outline"}>
-            <Link href={groupFilterHref(next, query)} aria-pressed={selected}>
+            <Link href={contactListHref(query, next)} aria-pressed={selected}>
               {group.name}
             </Link>
           </Badge>
@@ -192,13 +184,7 @@ function EmptyState({ query, groupCount }: { query: string; groupCount: number }
     return (
       <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
         <PixelIcon name="search" className="mb-2 size-8 text-accent" />
-        <p className="text-16 font-semibold">
-          {query
-            ? `Никого не нашли по запросу «${query}» в выбранных группах`
-            : groupCount === 1
-              ? "В этой группе пока нет контактов"
-              : "Нет контактов, которые входят во все выбранные группы"}
-        </p>
+        <p className="text-16 font-semibold">{emptyFilterMessage(query, groupCount)}</p>
       </div>
     );
   }

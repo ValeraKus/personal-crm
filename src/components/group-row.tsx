@@ -25,7 +25,7 @@ import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Window } from "@/components/window";
-import { formatContactCount, pluralize } from "@/lib/format";
+import { formatContactCount, formatGroupDeletion } from "@/lib/format";
 
 type GroupRowProps = { id: number; name: string; contactCount: number };
 
@@ -38,7 +38,8 @@ export function GroupRow({ id, name, contactCount }: GroupRowProps) {
         <RenameForm id={id} name={name} onDone={() => setEditing(false)} />
       ) : (
         <>
-          <div className="min-w-0 flex-1">
+          {/* On a phone the name takes the whole line, so the buttons cannot squeeze it */}
+          <div className="min-w-0 flex-1 basis-full sm:basis-0">
             <Link
               href={`/?group=${id}`}
               className="text-16 font-semibold break-words underline-offset-4 hover:underline"
@@ -47,7 +48,7 @@ export function GroupRow({ id, name, contactCount }: GroupRowProps) {
             </Link>
             <div className="text-14 text-ink-muted">{formatContactCount(contactCount)}</div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setEditing(true)}>
               Переименовать
             </Button>
@@ -113,11 +114,6 @@ function DeleteGroupButton({ id, name, contactCount }: GroupRowProps) {
   );
   const error = state.status === "error" ? state.message : null;
 
-  const kept =
-    contactCount > 0
-      ? `, ${contactCount} ${pluralize(contactCount, ["контакт останется", "контакта останутся", "контактов останутся"])} без неё`
-      : "";
-
   return (
     <>
       <Button variant="destructive" onClick={() => setOpen(true)}>
@@ -130,7 +126,7 @@ function DeleteGroupButton({ id, name, contactCount }: GroupRowProps) {
               <AlertDialogHeader>
                 <AlertDialogTitle>Удалить группу?</AlertDialogTitle>
                 <AlertDialogDescription className="break-words">
-                  Группа «{name}» удалится{kept}
+                  {formatGroupDeletion(name, contactCount)}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               {error ? (

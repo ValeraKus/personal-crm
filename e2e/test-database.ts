@@ -7,7 +7,7 @@ import { count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import { contacts, notes } from "../src/db/schema";
+import { contactGroups, contacts, groups, notes } from "../src/db/schema";
 import type { Frequency } from "../src/lib/keep-in-touch";
 
 const TEST_DATABASE_SUFFIX = "_e2e";
@@ -60,6 +60,8 @@ type ContactSeed = {
   // When the frequency was set: required with a frequency, the term counts from it if there are no notes
   since?: Date;
   notes?: { body: string; createdAt: Date }[];
+  // Groups of the contact, from insertGroup
+  groupIds?: number[];
 };
 
 // A contact with its term and notes already in the past: the only way to get an overdue contact
@@ -78,6 +80,11 @@ export async function insertContact(seed: ContactSeed) {
     if (seed.notes?.length) {
       await db.insert(notes).values(seed.notes.map((note) => ({ contactId: contact.id, ...note })));
     }
+    if (seed.groupIds?.length) {
+      await db
+        .insert(contactGroups)
+        .values(seed.groupIds.map((groupId) => ({ contactId: contact.id, groupId })));
+    }
     return contact.id;
   });
 }
@@ -86,6 +93,18 @@ export async function insertContact(seed: ContactSeed) {
 // For tests that need to know every contact on the page, e.g. the number of overdue ones.
 export async function deleteAllContacts() {
   await withTestDb((db) => db.delete(contacts));
+}
+
+export async function insertGroup(name: string) {
+  return withTestDb(async (db) => {
+    const [group] = await db.insert(groups).values({ name }).returning({ id: groups.id });
+    return group.id;
+  });
+}
+
+// Empties the groups: their links to contacts go away on cascade, the contacts stay
+export async function deleteAllGroups() {
+  await withTestDb((db) => db.delete(groups));
 }
 
 export async function countContacts() {

@@ -12,6 +12,13 @@ export function formatContactCount(count: number) {
   return `${count.toLocaleString("ru-RU")} ${pluralize(count, ["контакт", "контакта", "контактов"])}`;
 }
 
+// "Найдено: 2 из 4 контактов": after "из" the word stays in the genitive case, so its forms differ
+// from formatContactCount: "из 1 контакта", "из 4 контактов"
+export function formatFoundCount(found: number, total: number) {
+  const contactWord = pluralize(total, ["контакта", "контактов", "контактов"]);
+  return `Найдено: ${found.toLocaleString("ru-RU")} из ${total.toLocaleString("ru-RU")} ${contactWord}`;
+}
+
 const noteDateFormat = new Intl.DateTimeFormat("ru-RU", {
   day: "numeric",
   month: "long",
@@ -55,4 +62,13 @@ export function formatDueDate(date: Date, now = new Date()) {
 
 export function formatOverdue(days: number) {
   return `просрочено на ${days} ${pluralize(days, ["день", "дня", "дней"])}`;
+}
+
+// The question before a group is deleted; a group without contacts has nothing to warn about
+export function formatGroupDeletion(name: string, contactCount: number) {
+  const kept =
+    contactCount > 0
+      ? `, ${contactCount} ${pluralize(contactCount, ["контакт останется", "контакта останутся", "контактов останутся"])} без неё`
+      : "";
+  return `Группа «${name}» удалится${kept}`;
 }

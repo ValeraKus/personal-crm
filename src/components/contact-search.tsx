@@ -6,6 +6,7 @@ import { useEffect, useRef, useTransition, type FormEvent } from "react";
 import { PixelIcon } from "@/components/pixel-icon";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { contactListHref } from "@/lib/group-filter";
 
 const SEARCH_DELAY_MS = 250;
 
@@ -28,12 +29,7 @@ export function ContactSearch({ query, groupIds }: { query: string; groupIds: nu
 
   function runSearch(value: string) {
     clearTimeout(timerRef.current);
-    const nextQuery = value.trim();
-    const params = new URLSearchParams();
-    if (nextQuery) params.set("q", nextQuery);
-    for (const id of groupIds) params.append("group", String(id));
-    const search = params.toString();
-    const url = search ? `/?${search}` : "/";
+    const url = contactListHref(value.trim(), groupIds);
     startTransition(() => router.replace(url, { scroll: false }));
   }
 

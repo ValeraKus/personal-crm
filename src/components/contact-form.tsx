@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { isFrequency } from "@/lib/keep-in-touch";
-import { foldGroupName, groupNameSchema, type ContactField } from "@/lib/validation";
+import { chooseNewGroup, type ContactField } from "@/lib/validation";
 
 // Radio items cannot have an empty value, so "not set" is "none" here and empty in the submitted form
 const FREQUENCY_OPTIONS = [
@@ -65,18 +65,13 @@ export function ContactForm({
   }
 
   function addNewGroup() {
-    const parsed = groupNameSchema.safeParse(newGroupText);
-    if (!parsed.success) {
-      setNewGroupError(parsed.error.issues[0].message);
+    const choice = chooseNewGroup(newGroupText, groups, newGroups);
+    if (choice.kind === "error") {
+      setNewGroupError(choice.message);
       return;
     }
-    const folded = foldGroupName(parsed.data);
-    const existing = groups.find((group) => foldGroupName(group.name) === folded);
-    if (existing) {
-      toggleGroup(existing.id, true);
-    } else if (!newGroups.some((name) => foldGroupName(name) === folded)) {
-      setNewGroups([...newGroups, parsed.data]);
-    }
+    if (choice.kind === "existing") toggleGroup(choice.id, true);
+    if (choice.kind === "new") setNewGroups([...newGroups, choice.name]);
     setNewGroupText("");
     setNewGroupError(undefined);
   }

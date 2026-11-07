@@ -1,7 +1,9 @@
-# Shared settings and helpers of deploy.sh and rollback.sh
+# Shared settings and helpers of deploy.sh, rollback.sh, backup.sh and restore.sh
 
 APP_DOMAIN=app.context-crm.site
 COMPOSE_PROJECT=prod
+BACKUP_DIR=backups
+BACKUPS_TO_KEEP=14
 
 log() {
   printf '[%s] %s\n' "$(date '+%H:%M:%S')" "$*"
@@ -49,4 +51,37 @@ smoke_check() {
   done
   log "Smoke check failed: https://$APP_DOMAIN/health -> ${body:-no answer}"
   return 1
+}
+
+# Version (image tag) of the running release; "none" if nothing was deployed yet
+current_version() {
+  local image
+  image=$(release_image compose.override.yaml)
+  printf '%s' "${image:+${image##*:}}" | grep . || echo none
+}
+
+# Runs psql inside the db container as the database owner; extra arguments go to psql
+db_psql() {
+  compose exec -T db sh -c 'exec psql -U "$POSTGRES_USER" -v ON_ERROR_STOP=1 "$@"' sh "$@"
+}
+
+db_name() {
+  compose exec -T db sh -c 'printf %s "$POSTGRES_DB"'
+}
+
+# Dumps the app database to $BACKUP_DIR/<prefix>-<time>-<version>.sql.gz and prints the path.
+# The dump goes to a .tmp file first, so a half-written file never looks like a backup.
+make_backup() {
+  local prefix=$1 version file
+  version=$(current_version)
+  file=$BACKUP_DIR/$prefix-$(date +%Y%m%d-%H%M%S)-$version.sql.gz
+  install -d -m 700 "$BACKUP_DIR"
+  if ! compose exec -T db sh -c 'exec pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB"' | gzip > "$file.tmp" \
+    || [ "$(gzip -dc "$file.tmp" | wc -c)" -eq 0 ]; then
+    rm -f "$file.tmp"
+    return 1
+  fi
+  chmod 600 "$file.tmp"
+  mv "$file.tmp" "$file"
+  printf '%s\n' "$file"
 }

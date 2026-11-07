@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploys one app image: pull -> migrations -> new app container -> smoke check of /health.
+# Deploys one app image: pull -> database backup -> migrations -> new app container -> smoke check of /health.
 # GitHub Actions runs it over SSH: deploy.sh <image> <registry user>, with a registry token on stdin.
 # It never rolls back by itself: on failure it stops and reports. Rollback is manual: rollback.sh.
 set -euo pipefail
@@ -32,6 +32,9 @@ write_release next-release.yaml "$image"
 
 log "Starting the database"
 compose -f compose.yaml -f next-release.yaml up -d --wait --quiet-pull db
+
+# The backup is named after the version running now; if it fails, nothing else happens
+./backup.sh || fail "backup failed: migrations not run, the app keeps running the previous version"
 
 log "Applying migrations"
 if ! compose -f compose.yaml -f next-release.yaml run --rm -T migrate; then

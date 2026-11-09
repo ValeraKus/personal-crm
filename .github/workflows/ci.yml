@@ -1,5 +1,5 @@
-# Every pull request: lint, format, types, unit tests (Vitest), e2e tests (Playwright) on a real
-# PostgreSQL, and the Docker image build. main is protected: a PR merges only when all jobs are green.
+# Every pull request: lint, format, types, unit tests (Vitest), database tests (Vitest) and e2e tests
+# (Playwright) on a real PostgreSQL with a mail catcher, and the Docker image build. main is protected: a PR merges only when all jobs are green.
 # The job names are the required checks of main: rename a job only together with the protection rule.
 name: CI
 
@@ -54,6 +54,15 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      # A throwaway mail catcher: the login emails of the tests land here, nothing goes out.
+      # Chaos mode lets a test make SMTP fail on demand. Its page (8025) is what the tests read.
+      mailpit:
+        image: axllent/mailpit:v1.33.1
+        env:
+          MP_ENABLE_CHAOS: "true"
+        ports:
+          - 1025:1025
+          - 8025:8025
     env:
       # The tests recreate the personal_crm_e2e database next to it (see e2e/test-database.ts)
       DATABASE_URL: postgres://postgres@localhost:5432/personal_crm
@@ -67,6 +76,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Install the browser for the tests
         run: pnpm exec playwright install --with-deps chromium
+      # Database tests: the code that reads and writes data, on the real database
+      - name: Database tests
+        run: pnpm test:db
       - name: e2e tests
         run: pnpm test:e2e
       # A failed test leaves a screenshot and a trace: download them from the run page

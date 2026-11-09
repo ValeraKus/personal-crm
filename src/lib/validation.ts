@@ -90,3 +90,21 @@ export function chooseNewGroup(
   if (newGroups.some((name) => foldGroupName(name) === folded)) return { kind: "repeat" };
   return { kind: "new", name: parsed.data };
 }
+
+export const LOGIN_EMAIL_ERROR = "Проверьте адрес почты";
+
+// The longest address SMTP allows
+const MAX_EMAIL_LENGTH = 254;
+
+export type LoginEmailResult = { ok: true; email: string } | { ok: false; message: string };
+
+// The one place that decides what a login address is, for the form and for a direct request to the
+// server: spaces at the edges are removed and letter case is ignored, so "  Ivan@Example.com " and
+// "ivan@example.com" are the same person
+export function parseLoginEmail(value: unknown): LoginEmailResult {
+  const email = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (email === "" || email.length > MAX_EMAIL_LENGTH || !z.email().safeParse(email).success) {
+    return { ok: false, message: LOGIN_EMAIL_ERROR };
+  }
+  return { ok: true, email };
+}

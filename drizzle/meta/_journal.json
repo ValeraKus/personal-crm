@@ -22,6 +22,20 @@
       "when": 1793449309915,
       "tag": "0002_perpetual_millenium_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794249066135,
+      "tag": "0003_cool_lorna_dane",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794250765737,
+      "tag": "0004_tiresome_wraith",
+      "breakpoints": true
     }
   ]
 }

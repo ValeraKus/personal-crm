@@ -4,6 +4,7 @@ import { BackLink } from "@/components/back-link";
 import { GroupRow } from "@/components/group-row";
 import { Window } from "@/components/window";
 import { listGroupsWithCounts } from "@/db/queries";
+import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Группы",
@@ -13,7 +14,8 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function GroupsPage() {
-  const groups = await listGroupsWithCounts();
+  const user = await requireUser();
+  const groups = await listGroupsWithCounts(user.id);
 
   return (
     <div className="flex flex-col gap-4 sm:gap-5">

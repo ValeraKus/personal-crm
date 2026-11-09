@@ -4,16 +4,12 @@
 // here they are checked as the user sees them, on a real database.
 // Not covered here: renaming a group and the group link on the "Группы" page.
 
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
 import { daysAgo } from "./dates";
-import {
-  countContacts,
-  deleteAllContacts,
-  deleteAllGroups,
-  insertContact,
-  insertGroup,
-} from "./test-database";
+import { signIn } from "./auth";
+import { expect, test } from "./fixtures";
+import { countContacts, insertContact, insertGroup } from "./test-database";
 
 // Colors of the design tokens in src/styles/tokens.css, as the browser reports them
 const ACCENT_PINK = "rgb(255, 143, 199)"; // --color-accent
@@ -22,15 +18,8 @@ const WHITE = "rgb(255, 255, 255)";
 // The number of a group that does not exist
 const MISSING_GROUP_ID = 999_999;
 
-async function emptyDatabase() {
-  await deleteAllContacts();
-  await deleteAllGroups();
-}
-
-// Scenarios depend on which groups exist: each test starts from an empty database
-test.beforeEach(emptyDatabase);
-// The other test files share this database
-test.afterAll(emptyDatabase);
+// Every test is a user of its own, with no contacts and no groups, so the scenarios that depend on
+// which groups exist start from nothing
 
 // Rows of the general list: each letter is a section named "На букву …"
 function listRegion(page: Page) {
@@ -304,6 +293,7 @@ test("filter on the home page: one and several groups, search, reset, address, e
   page,
   browser,
   baseURL,
+  userEmail,
 }) => {
   const family = await insertGroup("Семья");
   const tennis = await insertGroup("Теннис");
@@ -379,6 +369,8 @@ test("filter on the home page: one and several groups, search, reset, address, e
     const otherBrowser = await browser.newContext({ baseURL });
     try {
       const otherPage = await otherBrowser.newPage();
+      // Another browser is another device: it signs in under the same address
+      await signIn(otherPage, userEmail);
       await otherPage.goto(page.url());
       await expectList(otherPage, ["Анна Смирнова", "Иван Петров"]);
       await expectFilterButton(otherPage, "Теннис", true);

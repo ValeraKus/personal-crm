@@ -3,19 +3,15 @@
 // The term rules themselves (labels, due dates, overdue days, order) are checked by the unit tests
 // in src/lib; here they are checked as the user sees them.
 
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
 import { addDays, addMonths, daysAgo, dueDateText, noteDayText, today } from "./dates";
-import { countContacts, deleteAllContacts, insertContact } from "./test-database";
+import { expect, test } from "./fixtures";
+import { countContacts, insertContact } from "./test-database";
 
 // Colors of the design tokens in src/styles/tokens.css, as the browser reports them
 const ACCENT_PINK = "rgb(255, 143, 199)"; // --color-accent
 const DANGER_RED = "rgb(194, 24, 91)"; // --color-danger
-
-// The home block shows every overdue contact of the database: each test starts from an empty one
-test.beforeEach(async () => {
-  await deleteAllContacts();
-});
 
 function keepInTouchBlock(page: Page) {
   return page.getByRole("region", { name: "Пора связаться" });

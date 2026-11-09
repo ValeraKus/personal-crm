@@ -7,7 +7,8 @@ import type { NewContact, NewNote } from "../src/db/schema";
 type Gender = "male" | "female";
 
 export type SeedPerson = {
-  contact: NewContact;
+  // The owner is set when the contact is saved
+  contact: Omit<NewContact, "ownerId">;
   notes: Omit<NewNote, "contactId">[];
 };
 
@@ -457,7 +458,7 @@ export function generatePeople(count: number, now: Date, seed = 20261007): SeedP
       }))
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
-    const contact: NewContact = {
+    const contact: SeedPerson["contact"] = {
       name: `${firstName} ${lastName}`,
       about: about(random, gender),
       howWeMet: random.chance(0.85) ? byGender(random.pick(HOW_WE_MET)(random), gender) : null,

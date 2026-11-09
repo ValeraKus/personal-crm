@@ -4,6 +4,7 @@
   "compilerOptions": {
     "noEmit": false,
     "incremental": false,
+    "allowImportingTsExtensions": false,
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "rootDir": ".",

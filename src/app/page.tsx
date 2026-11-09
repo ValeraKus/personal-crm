@@ -24,6 +24,7 @@ import {
 } from "@/lib/group-filter";
 import { parseContactId } from "@/lib/ids";
 import { overdueContacts } from "@/lib/keep-in-touch";
+import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 // Always read fresh data from the database: any browser sees the same contacts
@@ -43,24 +44,25 @@ function groupByLetter(items: ContactListItem[]) {
   return groups;
 }
 
-async function listOverdueContacts() {
-  return overdueContacts(await listContactsWithTerm(), new Date());
+async function listOverdueContacts(ownerId: string) {
+  return overdueContacts(await listContactsWithTerm(ownerId), new Date());
 }
 
 export default async function ContactsPage({ searchParams }: PageProps<"/">) {
+  const user = await requireUser();
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q.trim() : "";
   const addedId = parseContactId(params.added);
 
-  const allGroups = await listGroups();
+  const allGroups = await listGroups(user.id);
   const selectedIds = selectedGroupIds(params.group, allGroups);
   const filtered = query !== "" || selectedIds.length > 0;
 
   // The block is hidden while searching or filtering, so its query is skipped too
   const [items, total, overdue] = await Promise.all([
-    listContacts(query, selectedIds),
-    countContacts(),
-    filtered ? [] : listOverdueContacts(),
+    listContacts(user.id, query, selectedIds),
+    countContacts(user.id),
+    filtered ? [] : listOverdueContacts(user.id),
   ]);
   const groups = groupByLetter(items);
   const added = addedId === null ? undefined : items.find((item) => item.id === addedId);
@@ -202,9 +204,7 @@ function EmptyState({ query, groupCount }: { query: string; groupCount: number }
       ) : (
         <>
           <p className="text-16 font-semibold">Пока нет ни одного контакта</p>
-          <p className="text-14 text-ink-muted">
-            Добавьте первого человека — нажмите «Добавить контакт».
-          </p>
+          <p className="text-14 text-ink-muted">Добавьте первый контакт</p>
         </>
       )}
     </div>

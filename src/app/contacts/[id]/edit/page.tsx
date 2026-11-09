@@ -7,6 +7,7 @@ import { ContactForm } from "@/components/contact-form";
 import { Window } from "@/components/window";
 import { getContact, listContactGroups, listGroups } from "@/db/queries";
 import { parseContactId } from "@/lib/ids";
+import { requireUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -15,12 +16,17 @@ export const metadata: Metadata = {
 };
 
 export default async function EditContactPage({ params }: PageProps<"/contacts/[id]/edit">) {
+  const user = await requireUser();
   const id = parseContactId((await params).id);
   if (id === null) notFound();
-  const contact = await getContact(id);
+  // A contact of somebody else is not found, the same as one that does not exist
+  const contact = await getContact(user.id, id);
   if (!contact) notFound();
 
-  const [groups, contactGroups] = await Promise.all([listGroups(), listContactGroups(contact.id)]);
+  const [groups, contactGroups] = await Promise.all([
+    listGroups(user.id),
+    listContactGroups(user.id, contact.id),
+  ]);
 
   const cardHref = `/contacts/${contact.id}`;
 

@@ -5,8 +5,10 @@
 
 import { randomUUID } from "node:crypto";
 
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
+import { signIn } from "./auth";
+import { expect, test } from "./fixtures";
 import { countContacts, insertContacts } from "./test-database";
 
 // Rows of the contact list: each letter is a section named "На букву …"
@@ -22,6 +24,7 @@ test("main scenario: see all contacts, add one, find it, write a note, open in a
   page,
   browser,
   baseURL,
+  userEmail,
 }) => {
   // A unique mark in every name: data of other tests never gets in the way
   const mark = randomUUID().slice(0, 6);
@@ -73,6 +76,8 @@ test("main scenario: see all contacts, add one, find it, write a note, open in a
     const otherBrowser = await browser.newContext({ baseURL });
     try {
       const otherPage = await otherBrowser.newPage();
+      // Another browser is another device: it signs in under the same address
+      await signIn(otherPage, userEmail);
 
       await otherPage.goto("/");
       await expect(contactRows(otherPage)).toHaveCount(await countContacts());

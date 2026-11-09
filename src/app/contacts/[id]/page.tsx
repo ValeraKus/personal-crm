@@ -15,28 +15,31 @@ import { getContact, listContactGroups, listNotes } from "@/db/queries";
 import { formatDueDate, formatNoteDate, formatOverdue, pluralize } from "@/lib/format";
 import { parseContactId } from "@/lib/ids";
 import { getTermStatus, isFrequency } from "@/lib/keep-in-touch";
+import { requireUser } from "@/lib/session";
 
 // Always read fresh data from the database: any browser sees the same card
 export const dynamic = "force-dynamic";
 
+// A contact of somebody else is not found, the same as one that does not exist
 async function loadContact(params: PageProps<"/contacts/[id]">["params"]) {
+  const user = await requireUser();
   const id = parseContactId((await params).id);
   if (id === null) notFound();
-  const contact = await getContact(id);
+  const contact = await getContact(user.id, id);
   if (!contact) notFound();
-  return contact;
+  return { user, contact };
 }
 
 export async function generateMetadata({ params }: PageProps<"/contacts/[id]">): Promise<Metadata> {
-  const contact = await loadContact(params);
+  const { contact } = await loadContact(params);
   return { title: contact.name };
 }
 
 export default async function ContactPage({ params }: PageProps<"/contacts/[id]">) {
-  const contact = await loadContact(params);
+  const { user, contact } = await loadContact(params);
   const [notes, contactGroups] = await Promise.all([
-    listNotes(contact.id),
-    listContactGroups(contact.id),
+    listNotes(user.id, contact.id),
+    listContactGroups(user.id, contact.id),
   ]);
   const term = isFrequency(contact.keepInTouchFrequency)
     ? getTermStatus({

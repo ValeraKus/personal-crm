@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { chooseNewGroup, contactSchema, foldGroupName, groupNameSchema } from "@/lib/validation";
+import {
+  chooseNewGroup,
+  contactSchema,
+  foldGroupName,
+  groupNameSchema,
+  parseLoginEmail,
+} from "@/lib/validation";
 
 // Raw values of the contact form, as the browser sends them: every field is text
 function contactForm(fields: { keepInTouchFrequency?: string; keepInTouchDays?: string } = {}) {
@@ -136,5 +142,42 @@ describe("chooseNewGroup", () => {
 
   it("does nothing when the same new group is already added in the form", () => {
     expect(chooseNewGroup("аналитики", [tennis], ["Аналитики"])).toEqual({ kind: "repeat" });
+  });
+});
+
+// Scenarios of the "Проверка почты" requirement in openspec/specs/user-auth/spec.md
+describe("parseLoginEmail", () => {
+  it("rejects an address without a domain", () => {
+    expect(parseLoginEmail("ivan@")).toEqual({ ok: false, message: "Проверьте адрес почты" });
+  });
+
+  it("rejects an empty field and a field of spaces", () => {
+    expect(parseLoginEmail("")).toEqual({ ok: false, message: "Проверьте адрес почты" });
+    expect(parseLoginEmail("   ")).toEqual({ ok: false, message: "Проверьте адрес почты" });
+  });
+
+  it("rejects text that is not an address", () => {
+    expect(parseLoginEmail("ivan")).toEqual({ ok: false, message: "Проверьте адрес почты" });
+    expect(parseLoginEmail("ivan example.com")).toEqual({
+      ok: false,
+      message: "Проверьте адрес почты",
+    });
+  });
+
+  it("rejects a value that is not text", () => {
+    expect(parseLoginEmail(undefined)).toEqual({ ok: false, message: "Проверьте адрес почты" });
+    expect(parseLoginEmail(null)).toEqual({ ok: false, message: "Проверьте адрес почты" });
+    expect(parseLoginEmail(42)).toEqual({ ok: false, message: "Проверьте адрес почты" });
+  });
+
+  it("strips spaces at the edges and ignores letter case", () => {
+    expect(parseLoginEmail("  Ivan@Example.com  ")).toEqual({
+      ok: true,
+      email: "ivan@example.com",
+    });
+  });
+
+  it("gives the same address for the same address typed differently", () => {
+    expect(parseLoginEmail("IVAN@EXAMPLE.COM")).toEqual(parseLoginEmail(" ivan@example.com"));
   });
 });

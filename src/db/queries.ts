@@ -6,6 +6,10 @@ import { cache } from "react";
 import { getDb } from "./index";
 import { contactGroups, contacts, groups, notes } from "./schema";
 
+// Every read here takes the owner as the first argument and returns only his data: no function
+// reads "everything". The notes and the links to groups have no owner of their own: they belong to
+// the owner of their contact, so they are reached only through a contact of this owner.
+
 // Alphabetical order by Russian rules: Cyrillic first, "ё" sorted together with "е"
 const nameOrder = sql`${contacts.name} collate "ru-RU-x-icu"`;
 
@@ -44,7 +48,7 @@ function groupsCondition(groupIds: number[]): SQL | undefined {
   );
 }
 
-export async function listContacts(query = "", groupIds: number[] = []) {
+export async function listContacts(ownerId: string, query = "", groupIds: number[] = []) {
   return getDb()
     .select({
       id: contacts.id,
@@ -54,34 +58,45 @@ export async function listContacts(query = "", groupIds: number[] = []) {
       email: contacts.email,
     })
     .from(contacts)
-    .where(and(nameSearchCondition(query), groupsCondition(groupIds)))
+    .where(
+      and(eq(contacts.ownerId, ownerId), nameSearchCondition(query), groupsCondition(groupIds)),
+    )
     .orderBy(nameOrder, contacts.id);
 }
 
 export type ContactListItem = Awaited<ReturnType<typeof listContacts>>[number];
 
-export async function countContacts() {
-  const [row] = await getDb().select({ total: count() }).from(contacts);
+export async function countContacts(ownerId: string) {
+  const [row] = await getDb()
+    .select({ total: count() })
+    .from(contacts)
+    .where(eq(contacts.ownerId, ownerId));
   return row.total;
 }
 
-// Cached per request: the page and its metadata both read the same contact
-export const getContact = cache(async (id: number) => {
-  const [contact] = await getDb().select().from(contacts).where(eq(contacts.id, id));
+// Cached per request: the page and its metadata both read the same contact.
+// A contact of somebody else is not found, the same as one that does not exist.
+export const getContact = cache(async (ownerId: string, id: number) => {
+  const [contact] = await getDb()
+    .select()
+    .from(contacts)
+    .where(and(eq(contacts.id, id), eq(contacts.ownerId, ownerId)));
   return contact;
 });
 
-export async function listNotes(contactId: number) {
-  return getDb()
-    .select()
+export async function listNotes(ownerId: string, contactId: number) {
+  const rows = await getDb()
+    .select({ note: notes })
     .from(notes)
-    .where(eq(notes.contactId, contactId))
+    .innerJoin(contacts, eq(contacts.id, notes.contactId))
+    .where(and(eq(notes.contactId, contactId), eq(contacts.ownerId, ownerId)))
     .orderBy(desc(notes.createdAt), desc(notes.id));
+  return rows.map((row) => row.note);
 }
 
 // Contacts with a frequency and the date of the last note, in the order of the general list.
 // Which of them are overdue is decided by getTermStatus: one set of rules for the block and the card.
-export async function listContactsWithTerm() {
+export async function listContactsWithTerm(ownerId: string) {
   return getDb()
     .select({
       id: contacts.id,
@@ -93,7 +108,7 @@ export async function listContactsWithTerm() {
     })
     .from(contacts)
     .leftJoin(notes, eq(notes.contactId, contacts.id))
-    .where(isNotNull(contacts.keepInTouchFrequency))
+    .where(and(eq(contacts.ownerId, ownerId), isNotNull(contacts.keepInTouchFrequency)))
     .groupBy(contacts.id)
     .orderBy(nameOrder, contacts.id);
 }
@@ -101,31 +116,45 @@ export async function listContactsWithTerm() {
 // Same alphabetical rules as the contact list
 const groupNameOrder = sql`${groups.name} collate "ru-RU-x-icu"`;
 
-export async function listGroups() {
+export async function listGroups(ownerId: string) {
   return getDb()
     .select({ id: groups.id, name: groups.name })
     .from(groups)
+    .where(eq(groups.ownerId, ownerId))
     .orderBy(groupNameOrder, groups.id);
 }
 
-export async function listContactGroups(contactId: number) {
+// The groups of a contact of this owner; for the contact of somebody else the list is empty
+export async function listContactGroups(ownerId: string, contactId: number) {
   return getDb()
     .select({ id: groups.id, name: groups.name })
     .from(contactGroups)
     .innerJoin(groups, eq(groups.id, contactGroups.groupId))
-    .where(eq(contactGroups.contactId, contactId))
+    .innerJoin(contacts, eq(contacts.id, contactGroups.contactId))
+    .where(
+      and(
+        eq(contactGroups.contactId, contactId),
+        eq(contacts.ownerId, ownerId),
+        eq(groups.ownerId, ownerId),
+      ),
+    )
     .orderBy(groupNameOrder, groups.id);
 }
 
-export async function listGroupsWithCounts() {
+export async function listGroupsWithCounts(ownerId: string) {
   return getDb()
     .select({
       id: groups.id,
       name: groups.name,
-      contactCount: count(contactGroups.contactId),
+      contactCount: count(contacts.id),
     })
     .from(groups)
     .leftJoin(contactGroups, eq(contactGroups.groupId, groups.id))
+    .leftJoin(
+      contacts,
+      and(eq(contacts.id, contactGroups.contactId), eq(contacts.ownerId, ownerId)),
+    )
+    .where(eq(groups.ownerId, ownerId))
     .groupBy(groups.id)
     .orderBy(groupNameOrder, groups.id);
 }

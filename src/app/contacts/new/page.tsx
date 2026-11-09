@@ -5,6 +5,7 @@ import { BackLink } from "@/components/back-link";
 import { ContactForm } from "@/components/contact-form";
 import { Window } from "@/components/window";
 import { listGroups } from "@/db/queries";
+import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Новый контакт",
@@ -14,7 +15,8 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function NewContactPage() {
-  const groups = await listGroups();
+  const user = await requireUser();
+  const groups = await listGroups(user.id);
   return (
     <div className="flex flex-col gap-4 sm:gap-5">
       <BackLink href="/">Все контакты</BackLink>

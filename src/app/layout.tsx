@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Golos_Text, Press_Start_2P, Rubik_Mono_One } from "next/font/google";
-import Link from "next/link";
-
 import { PixelIcon } from "@/components/pixel-icon";
+import { SiteHeader } from "@/components/site-header";
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
@@ -33,6 +32,10 @@ export const metadata: Metadata = {
   description: "Люди, которых я знаю лично, и контекст общения с ними",
 };
 
+// The header shows who is signed in, so no page is built ahead of time: `next build` runs without
+// the settings, and a prebuilt page would show the header of nobody
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -40,13 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${golosText.variable} ${rubikMonoOne.variable} ${pressStart2P.variable} h-full`}
     >
       <body className="flex min-h-full flex-col bg-grid-light text-ink">
-        <header className="mx-auto w-full max-w-3xl px-4 pt-5 sm:pt-7">
-          <div className="flex h-11 items-center px-1 sm:h-14 sm:px-0">
-            <Link href="/" className="font-pixel text-11 sm:text-14">
-              Context
-            </Link>
-          </div>
-        </header>
+        <SiteHeader />
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-4 pb-14 sm:pt-6 sm:pb-20">
           {children}
         </main>

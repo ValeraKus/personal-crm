@@ -1,15 +1,13 @@
 "use server";
 
-import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { z } from "zod";
 
-import { getDb } from "@/db";
 import { dbErrorForLog } from "@/db/errors";
-import { contactGroups, contacts, groups, notes } from "@/db/schema";
+import * as db from "@/db/mutations";
 import { parseContactId, parseGroupIds } from "@/lib/ids";
-import { CONTACTED_NOTE } from "@/lib/keep-in-touch";
+import { requireUser } from "@/lib/session";
 import {
   contactSchema,
   foldGroupName,
@@ -63,59 +61,28 @@ function firstErrorPerField(error: z.ZodError): ContactFormState["fieldErrors"] 
   return result;
 }
 
-type Db = ReturnType<typeof getDb>;
-type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
-
-// Group choices from the form: ids of existing groups and names of groups to create on save
+// Group choices from the form: numbers of existing groups and names of groups to create on save
 function readGroups(formData: FormData) {
   const groupIds = parseGroupIds(formData.getAll("groupIds").map(String));
-  const names: string[] = [];
+  const newNames: string[] = [];
   for (const raw of formData.getAll("newGroups")) {
     const parsed = groupNameSchema.safeParse(String(raw));
     if (!parsed.success) return { error: parsed.error.issues[0].message };
-    if (!names.some((name) => foldGroupName(name) === foldGroupName(parsed.data))) {
-      names.push(parsed.data);
+    if (!newNames.some((name) => foldGroupName(name) === foldGroupName(parsed.data))) {
+      newNames.push(parsed.data);
     }
   }
-  return { groupIds, names };
+  return { groupIds, newNames };
 }
 
-// Replaces all groups of the contact. New names are created here, in the caller's transaction;
-// a name that already exists (any case, "е"/"ё") reuses the existing group. Ids of groups that
-// are gone (deleted in another browser) are skipped.
-async function replaceContactGroups(
-  tx: Tx,
-  contactId: number,
-  groupIds: number[],
-  newNames: string[],
-) {
-  const ids = new Set<number>();
-  if (groupIds.length > 0) {
-    const existing = await tx
-      .select({ id: groups.id })
-      .from(groups)
-      .where(inArray(groups.id, groupIds));
-    for (const row of existing) ids.add(row.id);
-  }
-  for (const name of newNames) {
-    // The unique index on the folded name decides, so two parallel requests cannot make a duplicate
-    await tx.insert(groups).values({ name }).onConflictDoNothing();
-    const [group] = await tx
-      .select({ id: groups.id })
-      .from(groups)
-      .where(sql`replace(lower(${groups.name}), 'ё', 'е') = ${foldGroupName(name)}`);
-    if (group) ids.add(group.id);
-  }
-  await tx.delete(contactGroups).where(eq(contactGroups.contactId, contactId));
-  if (ids.size > 0) {
-    await tx.insert(contactGroups).values([...ids].map((groupId) => ({ contactId, groupId })));
-  }
-}
+// Every action starts with requireUser(): the owner of the data comes from the session and
+// nowhere else. A record of somebody else is answered like one that does not exist (see db/mutations).
 
 export async function createContact(
   _previousState: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
+  const user = await requireUser();
   const parsed = contactSchema.safeParse(readContactForm(formData));
   if (!parsed.success) {
     return { fieldErrors: firstErrorPerField(parsed.error) };
@@ -125,16 +92,7 @@ export async function createContact(
 
   let id: number;
   try {
-    // The term counts from now if a frequency is chosen
-    const keepInTouchSince = parsed.data.keepInTouchFrequency ? new Date() : null;
-    id = await getDb().transaction(async (tx) => {
-      const [created] = await tx
-        .insert(contacts)
-        .values({ ...parsed.data, keepInTouchSince })
-        .returning({ id: contacts.id });
-      await replaceContactGroups(tx, created.id, chosen.groupIds, chosen.names);
-      return created.id;
-    });
+    id = await db.createContact(user.id, parsed.data, chosen);
   } catch (error) {
     console.error("Failed to create contact", dbErrorForLog(error));
     return { formError: "Не удалось сохранить контакт. Попробуйте ещё раз." };
@@ -150,6 +108,7 @@ export async function updateContact(
   _previousState: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
+  const user = await requireUser();
   const id = parseContactId(rawId);
   if (id === null) {
     return { formError: "Контакт не найден." };
@@ -163,28 +122,7 @@ export async function updateContact(
   if ("error" in chosen) return { groupsError: chosen.error };
 
   try {
-    const found = await getDb().transaction(async (tx) => {
-      const updated = await tx
-        .update(contacts)
-        .set({
-          ...parsed.data,
-          // One UPDATE compares with the stored values, so saving the form without changing
-          // the frequency or the number of days does not move the start of the term
-          keepInTouchSince: sql`case
-          when ${parsed.data.keepInTouchFrequency}::text is null then null
-          when ${contacts.keepInTouchFrequency} is distinct from ${parsed.data.keepInTouchFrequency}::text
-            or ${contacts.keepInTouchDays} is distinct from ${parsed.data.keepInTouchDays}::smallint
-            then now()
-          else ${contacts.keepInTouchSince}
-        end`,
-          updatedAt: new Date(),
-        })
-        .where(eq(contacts.id, id))
-        .returning({ id: contacts.id });
-      if (updated.length === 0) return false;
-      await replaceContactGroups(tx, id, chosen.groupIds, chosen.names);
-      return true;
-    });
+    const found = await db.updateContact(user.id, id, parsed.data, chosen);
     if (!found) {
       return { formError: "Контакт не найден." };
     }
@@ -204,6 +142,7 @@ export async function addNote(
   _previousState: NoteFormState,
   formData: FormData,
 ): Promise<NoteFormState> {
+  const user = await requireUser();
   const contactId = parseContactId(rawContactId);
   if (contactId === null) {
     return { status: "error", message: "Контакт не найден." };
@@ -217,14 +156,9 @@ export async function addNote(
   }
 
   try {
-    const [contact] = await getDb()
-      .select({ id: contacts.id })
-      .from(contacts)
-      .where(eq(contacts.id, contactId));
-    if (!contact) {
+    if (!(await db.addNote(user.id, contactId, parsed.data.body))) {
       return { status: "error", message: "Контакт не найден." };
     }
-    await getDb().insert(notes).values({ contactId, body: parsed.data.body });
   } catch (error) {
     console.error("Failed to add note", dbErrorForLog(error));
     return {
@@ -241,14 +175,16 @@ export async function addNote(
 // No revalidatePath here: it would re-render the current page, the card of the deleted contact,
 // as "not found". The client goes to the list itself, and the list always reads fresh data.
 export async function deleteContact(rawId: number): Promise<DeleteContactState> {
+  const user = await requireUser();
   const id = parseContactId(rawId);
   if (id === null) {
     return { status: "error", message: "Контакт не найден." };
   }
 
   try {
-    // Nothing deleted means it is already gone, e.g. deleted in another browser: same result
-    await getDb().delete(contacts).where(eq(contacts.id, id));
+    // Nothing deleted means it is already gone (e.g. deleted in another browser) or not the
+    // user's: the same result
+    await db.deleteContact(user.id, id);
   } catch (error) {
     console.error("Failed to delete contact", dbErrorForLog(error));
     return {
@@ -262,28 +198,21 @@ export async function deleteContact(rawId: number): Promise<DeleteContactState> 
 
 // The "contacted" check mark is an ordinary note, so the term counts from it like from any note
 export async function markContacted(rawContactId: number): Promise<MarkContactedResult> {
+  const user = await requireUser();
   const contactId = parseContactId(rawContactId);
   if (contactId === null) {
     return { status: "error", message: "Контакт не найден." };
   }
 
-  let result: { noteId: number; name: string };
+  let result: { noteId: number; name: string } | null;
   try {
-    const [contact] = await getDb()
-      .select({ name: contacts.name })
-      .from(contacts)
-      .where(eq(contacts.id, contactId));
-    if (!contact) {
-      return { status: "error", message: "Контакт не найден." };
-    }
-    const [note] = await getDb()
-      .insert(notes)
-      .values({ contactId, body: CONTACTED_NOTE })
-      .returning({ id: notes.id });
-    result = { noteId: note.id, name: contact.name };
+    result = await db.markContacted(user.id, contactId);
   } catch (error) {
     console.error("Failed to mark contact as contacted", dbErrorForLog(error));
     return { status: "error", message: "Не удалось отметить" };
+  }
+  if (!result) {
+    return { status: "error", message: "Контакт не найден." };
   }
 
   revalidatePath("/");
@@ -291,33 +220,24 @@ export async function markContacted(rawContactId: number): Promise<MarkContacted
   return { status: "marked", ...result };
 }
 
-// Deletes only a fresh "contacted" note: the text and the age are checked here, on the server,
-// so any other note stays untouched even if this is called with its id
+// Deletes only a fresh "contacted" note: the text, the age and the owner are checked in the
+// database layer, so any other note stays untouched even if this is called with its id
 export async function undoMarkContacted(rawNoteId: number): Promise<UndoMarkContactedResult> {
+  const user = await requireUser();
   const noteId = parseContactId(rawNoteId);
   if (noteId === null) {
     return { status: "error", message: "Не удалось отменить" };
   }
 
-  let contactId: number | undefined;
+  let contactId: number | null;
   try {
-    const [deleted] = await getDb()
-      .delete(notes)
-      .where(
-        and(
-          eq(notes.id, noteId),
-          eq(notes.body, CONTACTED_NOTE),
-          gt(notes.createdAt, sql`now() - make_interval(secs => ${UNDO_WINDOW_SECONDS})`),
-        ),
-      )
-      .returning({ contactId: notes.contactId });
-    contactId = deleted?.contactId;
+    contactId = await db.undoMarkContacted(user.id, noteId, UNDO_WINDOW_SECONDS);
   } catch (error) {
     console.error("Failed to undo contacted mark", dbErrorForLog(error));
     return { status: "error", message: "Не удалось отменить" };
   }
 
-  if (contactId === undefined) {
+  if (contactId === null) {
     return { status: "error", message: "Не удалось отменить" };
   }
 
@@ -339,6 +259,7 @@ export async function renameGroup(
   _previousState: RenameGroupState,
   formData: FormData,
 ): Promise<RenameGroupState> {
+  const user = await requireUser();
   const id = parseContactId(rawId);
   if (id === null) {
     return { status: "error", message: "Группа не найдена." };
@@ -350,24 +271,14 @@ export async function renameGroup(
   }
 
   try {
-    // Renaming a group to its own name in another case ("теннис" -> "Теннис") is allowed:
-    // the unique index ignores the row being updated
-    const updated = await getDb()
-      .update(groups)
-      .set({ name: parsed.data })
-      .where(eq(groups.id, id))
-      .returning({ id: groups.id });
-    if (updated.length === 0) {
+    const result = await db.renameGroup(user.id, id, parsed.data);
+    if (result === "not-found") {
       return { status: "error", message: "Группа не найдена." };
     }
-  } catch (error) {
-    // 23505: the unique index on the folded name, so the title is taken by another group
-    if (
-      error instanceof Error &&
-      (error.cause as { code?: string } | undefined)?.code === "23505"
-    ) {
+    if (result === "duplicate") {
       return { status: "error", message: "Группа с таким названием уже есть" };
     }
+  } catch (error) {
     console.error("Failed to rename group", dbErrorForLog(error));
     return {
       status: "error",
@@ -382,14 +293,15 @@ export async function renameGroup(
 
 // Only the links between the group and its contacts go away: the foreign key deletes them on cascade
 export async function deleteGroup(rawId: number): Promise<DeleteGroupState> {
+  const user = await requireUser();
   const id = parseContactId(rawId);
   if (id === null) {
     return { status: "error", message: "Группа не найдена." };
   }
 
   try {
-    // Nothing deleted means it is already gone, e.g. deleted in another browser: same result
-    await getDb().delete(groups).where(eq(groups.id, id));
+    // Nothing deleted means it is already gone or not the user's: the same result
+    await db.deleteGroup(user.id, id);
   } catch (error) {
     console.error("Failed to delete group", dbErrorForLog(error));
     return {

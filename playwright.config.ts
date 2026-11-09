@@ -6,6 +6,15 @@ import { testDatabaseUrl } from "./e2e/test-database";
 const PORT = 3100;
 const baseURL = `http://127.0.0.1:${PORT}`;
 
+// Login settings of the test app. The secret is not a secret: it only protects the throwaway test
+// database. The emails go to Mailpit (docker-compose.yml, and a service container in CI).
+const authEnv = {
+  BETTER_AUTH_SECRET: "e2e-test-secret-only-for-the-throwaway-test-database",
+  BETTER_AUTH_URL: baseURL,
+  SMTP_URL: "smtp://127.0.0.1:1025",
+  MAIL_FROM: "Личная CRM <noreply@mail.crm.context-crm.site>",
+};
+
 export default defineConfig({
   testDir: "./e2e",
   // All tests share one database, so they run one after another
@@ -31,7 +40,12 @@ export default defineConfig({
       "node .next/standalone/server.js",
     ].join(" && "),
     url: `${baseURL}/health`,
-    env: { DATABASE_URL: testDatabaseUrl(), PORT: String(PORT), HOSTNAME: "127.0.0.1" },
+    env: {
+      DATABASE_URL: testDatabaseUrl(),
+      PORT: String(PORT),
+      HOSTNAME: "127.0.0.1",
+      ...authEnv,
+    },
     // Show the build and server output: a failed build says why
     stdout: "pipe",
     // An app left running on this port may be an old build: never test it instead of the fresh one

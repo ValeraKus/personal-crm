@@ -24,9 +24,7 @@ db=$(db_name)
 
 printf '\nThis will REPLACE the staging database "%s" with the latest prod backup:\n  %s\n' "$db" "$file"
 printf 'Everything in the staging database now is lost. Prod is not touched.\n'
-printf 'Type "yes" to continue: '
-read -r answer
-[ "$answer" = yes ] || fail "cancelled: nothing was changed"
+confirm
 
 log "Stopping the staging app"
 compose stop app

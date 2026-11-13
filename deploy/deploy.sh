@@ -1,20 +1,27 @@
 #!/usr/bin/env bash
-# Deploys one app image: pull -> database backup -> migrations -> new app container -> smoke check of /health.
-# GitHub Actions runs it over SSH: deploy.sh <image> <registry user>, with a registry token on stdin.
-# It never rolls back by itself: on failure it stops and reports. Rollback is manual: rollback.sh.
+# Deploys one app image to one environment:
+#   prod:    pull -> database backup -> migrations -> new app container -> smoke check of /health
+#   staging: pull -> migrations -> new app container -> smoke check of /health (no backup: staging is a
+#            copy of prod, recreated from a prod backup with refresh-staging.sh)
+# GitHub Actions runs it over SSH: deploy.sh <staging|prod> <image> <registry user>, with a registry
+# token on stdin. It never rolls back by itself: on failure it stops and reports. Rollback is manual.
 set -euo pipefail
 cd "$(dirname "$0")"
 source ./lib.sh
 
-usage="usage: deploy.sh <image> <registry user>, registry token on stdin"
-image=${1:?$usage}
-registry_user=${2:?$usage}
+usage="usage: deploy.sh <staging|prod> <image> <registry user>, registry token on stdin"
+use_environment "${1:?$usage}"
+image=${2:?$usage}
+registry_user=${3:?$usage}
 
 [ -f .env ] || fail ".env is missing in $PWD: create it first, see README"
 if [ "$(stat -c %a .env)" != 600 ]; then
   chmod 600 .env
   log "Set .env permissions to 600: only the owner can read it"
 fi
+
+lock_environment
+log "Deploying $image to $ENVIRONMENT"
 
 log "Pulling $image"
 docker_config=$(mktemp -d)
@@ -34,7 +41,9 @@ log "Starting the database"
 compose -f compose.yaml -f next-release.yaml up -d --wait --quiet-pull db
 
 # The backup is named after the version running now; if it fails, nothing else happens
-./backup.sh || fail "backup failed: migrations not run, the app keeps running the previous version"
+if [ "$ENVIRONMENT" = prod ]; then
+  ./backup.sh || fail "backup failed: migrations not run, the app keeps running the previous version"
+fi
 
 log "Applying migrations"
 if ! compose -f compose.yaml -f next-release.yaml run --rm -T migrate; then
@@ -50,19 +59,19 @@ mv next-release.yaml compose.override.yaml
 
 log "Starting the app"
 if ! compose up -d --wait --wait-timeout 120 app; then
-  fail "the new app is not healthy; logs: docker compose -p $COMPOSE_PROJECT logs app"
+  fail "the new app is not healthy; logs: ./compose.sh $ENVIRONMENT logs app"
 fi
 
 if ! smoke_check "${image##*:}"; then
-  fail "smoke check failed; logs: docker compose -p $COMPOSE_PROJECT logs app"
+  fail "smoke check failed; logs: ./compose.sh $ENVIRONMENT logs app"
 fi
 
-log "Removing old app images: keeping the current and the previous release"
-previous=$(release_image previous-release.yaml)
+log "Removing old app images: keeping the current and the previous release of each environment"
+in_use=$(images_in_use)
 docker image ls "${image%:*}" --format '{{.Repository}}:{{.Tag}}' | while read -r old; do
-  if [ "$old" != "$image" ] && [ "$old" != "$previous" ]; then
+  if ! grep -qxF "$old" <<< "$in_use"; then
     docker image rm "$old" > /dev/null && log "Removed $old" || log "Could not remove $old"
   fi
 done
 
-log "Deployed $image"
+log "Deployed $image to $ENVIRONMENT"

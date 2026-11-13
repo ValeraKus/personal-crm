@@ -2,9 +2,11 @@
 # Backs up the production database: backups/db-<time>-<version before the deploy>.sql.gz.
 # deploy.sh runs it before migrations; it can also be run by hand on the server.
 # Keeps the newest 14 backups, older ones are deleted. before-restore-* copies are never deleted.
+# Prod only: staging is not backed up, it is a copy of prod.
 set -euo pipefail
 cd "$(dirname "$0")"
 source ./lib.sh
+use_environment prod
 
 log "Backing up the database (running version: $(current_version))"
 file=$(make_backup db) || fail "could not back up the database"

@@ -1,10 +1,12 @@
-# Production stack on the server, docker compose project "prod":
+# The app stack on the server, the same for both environments: docker compose projects "prod" and
+# "staging", each in its own directory with its own .env and its own database volume.
 # - db: PostgreSQL; data in the db-data volume, not reachable from the network
 # - migrate: one-off container from the app image, applies migrations and exits
-# - app: the Next.js server, reachable only from nginx on 127.0.0.1:3000
-# Secrets come from .env next to this file. The app image of the current release is set in
-# compose.override.yaml, which deploy.sh writes; docker compose merges it in automatically.
-name: prod
+# - app: the Next.js server, reachable only from nginx on 127.0.0.1:<port of the environment>
+# Secrets come from .env next to this file. The address, the port and the sender of the emails come
+# from lib.sh by the environment, so docker compose is run only through the scripts and ./compose.sh.
+# The app image of the current release is set in compose.override.yaml, which deploy.sh writes;
+# docker compose merges it in automatically.
 
 x-logging: &logging
   driver: json-file
@@ -23,10 +25,10 @@ x-app-environment: &app-environment
   BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is not set in .env}
   SMTP_URL: ${SMTP_URL:?SMTP_URL is not set in .env}
   OWNER_EMAIL: ${OWNER_EMAIL:?OWNER_EMAIL is not set in .env}
-  # The same for every deploy, so they are not secrets and live here: the address of the app (the
-  # links in the emails lead there) and the sender of the emails
-  BETTER_AUTH_URL: https://app.context-crm.site
-  MAIL_FROM: Личная CRM <noreply@mail.crm.context-crm.site>
+  # Not secrets, set by lib.sh for the environment: the address of the app (the links in the emails
+  # lead there, the login cookie belongs to it) and the sender of the emails
+  BETTER_AUTH_URL: https://${APP_DOMAIN:?APP_DOMAIN is not set, run docker compose through ./compose.sh}
+  MAIL_FROM: ${MAIL_FROM:?MAIL_FROM is not set, run docker compose through ./compose.sh}
 
 services:
   db:
@@ -44,6 +46,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    # Memory limits: the server is small and shared by both environments and the landing,
+    # so no container can take the memory of the others
+    mem_limit: 256m
     logging: *logging
 
   migrate:
@@ -55,13 +60,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    mem_limit: 256m
     logging: *logging
 
   app:
     restart: unless-stopped
     environment: *app-environment
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${APP_PORT:?APP_PORT is not set, run docker compose through ./compose.sh}:3000"
     depends_on:
       db:
         condition: service_healthy
@@ -71,6 +77,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    mem_limit: 384m
     logging: *logging
 
 volumes:

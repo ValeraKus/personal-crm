@@ -22,9 +22,7 @@ db=$(db_name)
 
 printf '\nThis will REPLACE the database "%s" on this server with the backup:\n  %s\n' "$db" "$file"
 printf 'The app stays on version %s. A copy of the current database is made first.\n' "${version##*:}"
-printf 'Type "yes" to continue: '
-read -r answer
-[ "$answer" = yes ] || fail "cancelled: nothing was changed"
+confirm
 
 copy=$(make_backup before-restore) || fail "could not copy the current database: nothing was changed"
 log "Copy of the current database: $copy"

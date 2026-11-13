@@ -120,8 +120,17 @@ db_psql() {
   compose exec -T db sh -c 'exec psql -U "$POSTGRES_USER" -v ON_ERROR_STOP=1 "$@"' sh "$@"
 }
 
+# Reads nothing from stdin: docker compose exec would swallow the answer meant for confirm
 db_name() {
-  compose exec -T db sh -c 'printf %s "$POSTGRES_DB"'
+  compose exec -T db sh -c 'printf %s "$POSTGRES_DB"' < /dev/null
+}
+
+# Asks to type "yes". Anything else, or no answer at all, stops the script before any change.
+confirm() {
+  local answer=""
+  printf 'Type "yes" to continue: '
+  read -r answer || true
+  [ "$answer" = yes ] || fail "cancelled: nothing was changed"
 }
 
 # Replaces the whole database with a backup: drops it, creates it empty and loads the file.

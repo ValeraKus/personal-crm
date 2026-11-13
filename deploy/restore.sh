@@ -3,15 +3,18 @@
 #   sudo -iu deploy; cd /srv/personal-crm; ./restore.sh backups/<file>.sql.gz
 # Replaces the whole database: drops it, creates it empty, loads the backup.
 # The app version does not change. It never rolls back by itself: on failure it stops and reports.
+# Prod only: the staging database is recreated with refresh-staging.sh.
 set -euo pipefail
 cd "$(dirname "$0")"
 source ./lib.sh
+use_environment prod
 
 usage="usage: restore.sh <backup file>"
 file=${1:?$usage}
 [ -f "$file" ] || fail "file $file not found"
 gzip -t "$file" || fail "$file is not a valid .gz file"
 
+lock_environment
 version=$(release_image compose.override.yaml)
 [ -n "$version" ] || fail "no release is deployed yet: nothing to restore into"
 compose up -d --wait --quiet-pull db
@@ -30,18 +33,16 @@ log "Stopping the app"
 compose stop app
 
 log "Recreating the database $db"
-if ! { db_psql -d postgres -c "DROP DATABASE IF EXISTS \"$db\" WITH (FORCE)" \
-  && db_psql -d postgres -c "CREATE DATABASE \"$db\"" \
-  && gzip -dc "$file" | db_psql -d "$db" --single-transaction -q > /dev/null; }; then
+if ! recreate_database "$db" "$file"; then
   fail "restore failed, the app stays stopped. The copy of the previous database: $copy"
 fi
 
 log "Starting the app"
 if ! compose up -d --wait --wait-timeout 120 app; then
-  fail "the app is not healthy; logs: docker compose -p $COMPOSE_PROJECT logs app"
+  fail "the app is not healthy; logs: ./compose.sh prod logs app"
 fi
 if ! smoke_check "${version##*:}"; then
-  fail "smoke check failed; logs: docker compose -p $COMPOSE_PROJECT logs app"
+  fail "smoke check failed; logs: ./compose.sh prod logs app"
 fi
 
 log "Restored $db from $file; the app runs version ${version##*:}"

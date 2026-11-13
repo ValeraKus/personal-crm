@@ -1,14 +1,17 @@
-# Every push to main: build the app image tagged with the commit SHA, push it to GHCR,
-# copy deploy/ to the server and run deploy.sh there (migrations -> new app -> smoke check of /health).
+# Every push to main: build the app image tagged with the commit SHA, push it to GHCR, then deploy it
+# to staging and to prod in parallel: copy deploy/ to the directory of the environment on the server
+# and run deploy.sh there with the environment as a parameter (prod: backup -> migrations -> new app
+# -> smoke check of /health; staging: the same without the backup). Prod does not wait for staging.
 name: Deploy
 
 on:
   push:
     branches: [main]
 
-# One deploy at a time: a newer push waits for the running deploy instead of cancelling it
+# Runs go one after another in the order of the pushes, so an older version never lands after a newer
+# one: a newer push waits for the running deploy instead of cancelling it
 concurrency:
-  group: deploy-prod
+  group: deploy
   cancel-in-progress: false
 
 permissions:
@@ -16,7 +19,6 @@ permissions:
 
 env:
   IMAGE: ghcr.io/valerakus/personal-crm
-  APP_DIR: /srv/personal-crm
 
 jobs:
   build:
@@ -42,11 +44,28 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
+    name: Deploy ${{ matrix.environment }}
     needs: build
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: read
+    strategy:
+      # A failed staging deploy does not stop the prod deploy, and the other way round
+      fail-fast: false
+      matrix:
+        include:
+          - environment: staging
+            app_dir: /srv/personal-crm-staging
+          - environment: prod
+            app_dir: /srv/personal-crm
+    # Never two deploys of the same environment at once (deploy.sh also locks it on the server)
+    concurrency:
+      group: deploy-${{ matrix.environment }}
+      cancel-in-progress: false
+    env:
+      ENVIRONMENT: ${{ matrix.environment }}
+      APP_DIR: ${{ matrix.app_dir }}
     steps:
       - uses: actions/checkout@v7
 
@@ -62,7 +81,7 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
           cat > ~/.ssh/config <<EOF
-          Host prod
+          Host server
             HostName $DEPLOY_HOST
             User $DEPLOY_USER
             IdentityFile ~/.ssh/deploy_key
@@ -71,9 +90,9 @@ jobs:
           EOF
 
       - name: Copy deploy scripts to the server
-        run: tar -C deploy -cf - . | ssh prod "tar -xf - --no-overwrite-dir -C $APP_DIR"
+        run: tar -C deploy -cf - . | ssh server "tar -xf - --no-overwrite-dir -C $APP_DIR"
 
       - name: Deploy
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: printf '%s' "$GHCR_TOKEN" | ssh prod "$APP_DIR/deploy.sh $IMAGE:$GITHUB_SHA $GITHUB_ACTOR"
+        run: printf '%s' "$GHCR_TOKEN" | ssh server "$APP_DIR/deploy.sh $ENVIRONMENT $IMAGE:$GITHUB_SHA $GITHUB_ACTOR"

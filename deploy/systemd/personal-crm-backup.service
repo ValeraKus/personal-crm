@@ -1,0 +1,11 @@
+# Daily backup of the prod database; started by personal-crm-backup.timer.
+# Installed by setup-server.sh. Its output goes to the server journal: journalctl -u personal-crm-backup
+[Unit]
+Description=Daily backup of the personal-crm prod database
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+ExecStart=/srv/personal-crm/backup.sh daily

@@ -4,9 +4,15 @@
 
 PROD_DIR=/srv/personal-crm
 STAGING_DIR=/srv/personal-crm-staging
-# Backups are made on prod only, in $PROD_DIR/backups; staging is recreated from the latest of them
+# Backups are made on prod only, in $PROD_DIR/backups; staging is recreated from the latest of them.
+# Kinds: deploy (before every deploy), daily (03:00 Moscow time, systemd timer), manual (./backup.sh by
+# hand). The newest BACKUPS_TO_KEEP of each kind are kept; before-restore copies are never deleted.
 BACKUP_DIR=backups
-BACKUPS_TO_KEEP=14
+BACKUP_KINDS="deploy daily manual"
+BACKUPS_TO_KEEP=7
+# After a prod deploy, app images built more than this many days ago are removed from the server,
+# except the ones images_to_keep names
+IMAGE_MAX_AGE_DAYS=14
 # How long a deploy, a rollback or a restore waits for another one of the same environment
 LOCK_WAIT_SECONDS=900
 
@@ -82,13 +88,30 @@ services:
 EOF
 }
 
-# Images that one of the environments runs, can roll back to or is deploying right now
-images_in_use() {
-  local dir file
-  for dir in "$PROD_DIR" "$STAGING_DIR"; do
-    for file in compose.override.yaml previous-release.yaml next-release.yaml; do
-      release_image "$dir/$file"
-    done
+# Images that are never removed: the current and the previous release of prod (the rollback target),
+# the current release of staging and the release that either environment is deploying right now
+images_to_keep() {
+  release_image "$PROD_DIR/compose.override.yaml"
+  release_image "$PROD_DIR/previous-release.yaml"
+  release_image "$PROD_DIR/next-release.yaml"
+  release_image "$STAGING_DIR/compose.override.yaml"
+  release_image "$STAGING_DIR/next-release.yaml"
+}
+
+# Removes images of the app repository built more than IMAGE_MAX_AGE_DAYS days ago, except
+# images_to_keep. An image that cannot be removed is reported and skipped.
+remove_old_images() {
+  local repository=$1 keep cutoff old created
+  keep=$(images_to_keep)
+  cutoff=$(date -d "$IMAGE_MAX_AGE_DAYS days ago" +%s)
+  docker image ls "$repository" --format '{{.Repository}}:{{.Tag}}' | while read -r old; do
+    if [[ $old == *:"<none>" ]] || grep -qxF "$old" <<< "$keep"; then
+      continue
+    fi
+    created=$(docker image inspect --format '{{.Created}}' "$old") || continue
+    if [ "$(date -d "$created" +%s || echo "$cutoff")" -lt "$cutoff" ]; then
+      docker image rm "$old" > /dev/null && log "Removed $old (built $created)" || log "Could not remove $old"
+    fi
   done
 }
 
@@ -140,6 +163,32 @@ recreate_database() {
   db_psql -d postgres -c "DROP DATABASE IF EXISTS \"$db\" WITH (FORCE)" \
     && db_psql -d postgres -c "CREATE DATABASE \"$db\"" \
     && gzip -dc "$file" | db_psql -d "$db" --single-transaction -q > /dev/null
+}
+
+# Backs up the database as one of BACKUP_KINDS, then keeps only the newest BACKUPS_TO_KEEP backups of
+# that kind. The caller holds the lock of the environment.
+backup_database() {
+  local kind=$1 file old
+  log "Backing up the database ($kind backup, running version: $(current_version))"
+  file=$(make_backup "$kind") || return 1
+  log "Backup saved: $file ($(du -h "$file" | cut -f1))"
+  # Names start with the kind and a timestamp, so reverse alphabetical order is newest first
+  old=$(ls -1 "$BACKUP_DIR/$kind"-*.sql.gz | sort -r | tail -n +"$((BACKUPS_TO_KEEP + 1))")
+  if [ -n "$old" ]; then
+    printf '%s\n' "$old" | while read -r f; do
+      rm -f "$f" && log "Removed old backup $f"
+    done
+  fi
+}
+
+# The newest backup of any kind in the prod backup directory (before-restore copies do not count);
+# empty if there is none
+latest_backup() {
+  local kind patterns=()
+  for kind in $BACKUP_KINDS; do
+    patterns+=("$PROD_DIR/$BACKUP_DIR/$kind"-*.sql.gz)
+  done
+  ls -1t "${patterns[@]}" 2> /dev/null | head -n 1 || true
 }
 
 # Dumps the app database to $BACKUP_DIR/<prefix>-<time>-<version>.sql.gz and prints the path.

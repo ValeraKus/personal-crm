@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Recreates the staging database from the latest prod backup: drops it, creates it empty, loads the
-# backup and applies the migrations of the staging version (it may be newer than prod).
+# Recreates the staging database from the latest prod backup (deploy, daily or manual, whichever is
+# newest): drops it, creates it empty, loads the backup and applies the migrations of the staging
+# version (it may be newer than prod).
 # Run by hand on the server when staging needs fresh data or its data went wrong:
 #   sudo -iu deploy; cd /srv/personal-crm-staging; ./refresh-staging.sh
 # For the freshest data make a prod backup first: cd /srv/personal-crm; ./backup.sh
@@ -14,8 +15,7 @@ lock_environment
 version=$(release_image compose.override.yaml)
 [ -n "$version" ] || fail "staging has no release yet: deploy it first (merge to main)"
 
-# Names start with a timestamp, so reverse alphabetical order is newest first
-file=$(ls -1 "$PROD_DIR/$BACKUP_DIR"/db-*.sql.gz 2> /dev/null | sort -r | head -n 1) || true
+file=$(latest_backup)
 [ -n "$file" ] || fail "no prod backups in $PROD_DIR/$BACKUP_DIR: make one there with ./backup.sh"
 gzip -t "$file" || fail "$file is not a valid .gz file"
 

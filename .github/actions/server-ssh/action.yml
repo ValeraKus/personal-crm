@@ -1,0 +1,42 @@
+# Sets up SSH to the server for the deploy workflows: after this step `ssh server <command>` logs in as
+# the deploy user with the deploy key and checks the server against its known fingerprint.
+name: SSH to the server
+description: Writes the deploy key, the known hosts and an SSH config with the host alias "server"
+
+inputs:
+  ssh-key:
+    description: Private key of the deploy user (secret DEPLOY_SSH_KEY)
+    required: true
+  known-hosts:
+    description: Fingerprint of the server (variable DEPLOY_KNOWN_HOSTS)
+    required: true
+  host:
+    description: Address of the server (variable DEPLOY_HOST)
+    required: true
+  user:
+    description: User on the server (variable DEPLOY_USER)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up SSH to the server
+      shell: bash
+      env:
+        DEPLOY_SSH_KEY: ${{ inputs.ssh-key }}
+        DEPLOY_KNOWN_HOSTS: ${{ inputs.known-hosts }}
+        DEPLOY_HOST: ${{ inputs.host }}
+        DEPLOY_USER: ${{ inputs.user }}
+      run: |
+        install -d -m 700 ~/.ssh
+        printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+        cat > ~/.ssh/config <<EOF
+        Host server
+          HostName $DEPLOY_HOST
+          User $DEPLOY_USER
+          IdentityFile ~/.ssh/deploy_key
+          IdentitiesOnly yes
+          StrictHostKeyChecking yes
+        EOF

@@ -69,7 +69,7 @@ if ! smoke_check "${image##*:}"; then
 fi
 
 if [ "$ENVIRONMENT" = prod ]; then
-  log "Removing app images built more than $IMAGE_MAX_AGE_DAYS days ago, except the current and the previous release of prod and the current release of staging"
+  log "Removing app images pulled more than $IMAGE_MAX_AGE_DAYS days ago, except the current and the previous release of prod and the current release of staging"
   remove_old_images "${image%:*}"
 fi
 

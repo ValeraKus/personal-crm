@@ -28,6 +28,7 @@ import {
   getContact,
   listContactGroups,
   listContacts,
+  listContactsWithBirthday,
   listContactsWithTerm,
   listGroups,
   listGroupsWithCounts,
@@ -46,6 +47,9 @@ function input(name: string, overrides: Partial<ContactInput> = {}): ContactInpu
     email: null,
     keepInTouchFrequency: null,
     keepInTouchDays: null,
+    birthdayDay: null,
+    birthdayMonth: null,
+    birthdayYear: null,
     ...overrides,
   };
 }
@@ -149,6 +153,36 @@ describe("reads show only the data of their owner", () => {
   it("listContactsWithTerm: the overdue contacts of somebody else", async () => {
     expect((await listContactsWithTerm(w.a)).map((c) => c.name)).toEqual(["Анна"]);
     expect(await listContactsWithTerm(w.b)).toEqual([]);
+  });
+
+  // Scenario «Чужие дни рождения не видны» of openspec/changes/birthdays/specs/data-ownership/spec.md
+  it("listContactsWithBirthday: the birthdays of somebody else", async () => {
+    await getDb()
+      .update(contacts)
+      .set({ birthdayDay: 25, birthdayMonth: 11, birthdayYear: 1990 })
+      .where(eq(contacts.id, w.contactA));
+    expect(await listContactsWithBirthday(w.a)).toEqual([
+      { id: w.contactA, name: "Анна", birthdayDay: 25, birthdayMonth: 11, birthdayYear: 1990 },
+    ]);
+    expect(await listContactsWithBirthday(w.b)).toEqual([]);
+  });
+
+  it("listContactsWithBirthday: only contacts with a birthday, in alphabetical order", async () => {
+    await getDb()
+      .insert(contacts)
+      .values([
+        { ownerId: w.a, name: "Яна", birthdayDay: 1, birthdayMonth: 1 },
+        { ownerId: w.a, name: "Ёлка", birthdayDay: 3, birthdayMonth: 3, birthdayYear: 2000 },
+        { ownerId: w.a, name: "Егор", birthdayDay: 2, birthdayMonth: 2 },
+        // No birthday: not in the list
+        { ownerId: w.a, name: "Вера" },
+      ]);
+    // «Анна» of the world has no birthday either; «ё» sorts together with «е»
+    expect((await listContactsWithBirthday(w.a)).map((c) => c.name)).toEqual([
+      "Егор",
+      "Ёлка",
+      "Яна",
+    ]);
   });
 
   it("listGroups: the groups", async () => {

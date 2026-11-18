@@ -5,11 +5,20 @@ import {
   contactSchema,
   foldGroupName,
   groupNameSchema,
+  parseBirthday,
   parseLoginEmail,
 } from "@/lib/validation";
 
 // Raw values of the contact form, as the browser sends them: every field is text
-function contactForm(fields: { keepInTouchFrequency?: string; keepInTouchDays?: string } = {}) {
+function contactForm(
+  fields: {
+    keepInTouchFrequency?: string;
+    keepInTouchDays?: string;
+    birthdayDay?: string;
+    birthdayMonth?: string;
+    birthdayYear?: string;
+  } = {},
+) {
   return {
     name: "Анна Смирнова",
     about: "",
@@ -18,6 +27,9 @@ function contactForm(fields: { keepInTouchFrequency?: string; keepInTouchDays?: 
     email: "",
     keepInTouchFrequency: "",
     keepInTouchDays: "",
+    birthdayDay: "",
+    birthdayMonth: "",
+    birthdayYear: "",
     ...fields,
   };
 }
@@ -179,5 +191,164 @@ describe("parseLoginEmail", () => {
 
   it("gives the same address for the same address typed differently", () => {
     expect(parseLoginEmail("IVAN@EXAMPLE.COM")).toEqual(parseLoginEmail(" ivan@example.com"));
+  });
+});
+
+// Scenarios of the «Проверка даты рождения» requirement in
+// openspec/changes/birthdays/specs/birthdays/spec.md. «Сегодня» is 18 November 2026.
+describe("parseBirthday", () => {
+  const now = new Date(2026, 10, 18, 12);
+
+  function parse(day: string, month: string, year: string) {
+    return parseBirthday({ day, month, year }, now);
+  }
+
+  const MISSING = "Укажите день и месяц";
+  const NO_SUCH_DATE = "Такой даты нет";
+  const BAD_YEAR = "Укажите год от 1900 до 2026";
+
+  it("has no birthday when all three parts are empty", () => {
+    expect(parse("", "", "")).toEqual({ ok: true, day: null, month: null, year: null });
+  });
+
+  it("treats spaces as empty", () => {
+    expect(parse("  ", " ", "")).toEqual({ ok: true, day: null, month: null, year: null });
+  });
+
+  it("takes a day and a month without a year", () => {
+    expect(parse("25", "11", "")).toEqual({ ok: true, day: 25, month: 11, year: null });
+  });
+
+  it("takes a day, a month and a year", () => {
+    expect(parse("25", "11", "1990")).toEqual({ ok: true, day: 25, month: 11, year: 1990 });
+  });
+
+  it("asks for the day and the month when only the month is given", () => {
+    expect(parse("", "11", "")).toEqual({ ok: false, message: MISSING });
+  });
+
+  it("asks for the day and the month when only the day is given", () => {
+    expect(parse("25", "", "")).toEqual({ ok: false, message: MISSING });
+  });
+
+  it("asks for the day and the month when only the year is given", () => {
+    expect(parse("", "", "1990")).toEqual({ ok: false, message: MISSING });
+  });
+
+  it.each([
+    ["31", "4"],
+    ["0", "11"],
+    ["32", "11"],
+    ["2,5", "11"],
+    ["2.5", "11"],
+    ["-1", "11"],
+    ["abc", "11"],
+    ["25", "0"],
+    ["25", "13"],
+    ["25", "abc"],
+  ])("says there is no such date for day %j of month %j", (day, month) => {
+    expect(parse(day, month, "")).toEqual({ ok: false, message: NO_SUCH_DATE });
+  });
+
+  it("takes 29 February without a year", () => {
+    expect(parse("29", "2", "")).toEqual({ ok: true, day: 29, month: 2, year: null });
+  });
+
+  it("refuses 29 February of a year that is not a leap one", () => {
+    expect(parse("29", "2", "2001")).toEqual({ ok: false, message: NO_SUCH_DATE });
+    expect(parse("29", "2", "1900")).toEqual({ ok: false, message: NO_SUCH_DATE });
+  });
+
+  it("takes 29 February of a leap year", () => {
+    expect(parse("29", "2", "2000")).toEqual({ ok: true, day: 29, month: 2, year: 2000 });
+  });
+
+  it.each(["1899", "2027", "90", "19а0", "1990.5", "-1990", "99999"])(
+    "refuses the year %j",
+    (year) => {
+      expect(parse("25", "11", year)).toEqual({ ok: false, message: BAD_YEAR });
+    },
+  );
+
+  it("takes the limits of the year: 1900 and the current one", () => {
+    expect(parse("25", "11", "1900")).toMatchObject({ ok: true, year: 1900 });
+    expect(parse("1", "1", "2026")).toMatchObject({ ok: true, year: 2026 });
+  });
+
+  it("counts the last year from the current date, not from a number in the code", () => {
+    expect(
+      parseBirthday({ day: "1", month: "1", year: "2027" }, new Date(2027, 5, 1)),
+    ).toMatchObject({ ok: true, year: 2027 });
+    expect(parseBirthday({ day: "1", month: "1", year: "2028" }, new Date(2027, 5, 1))).toEqual({
+      ok: false,
+      message: "Укажите год от 1900 до 2027",
+    });
+  });
+
+  it("refuses a date in the future", () => {
+    expect(parse("25", "11", "2026")).toEqual({
+      ok: false,
+      message: "Дата рождения не может быть в будущем",
+    });
+    expect(parse("19", "11", "2026")).toEqual({
+      ok: false,
+      message: "Дата рождения не может быть в будущем",
+    });
+  });
+
+  it("takes today and yesterday", () => {
+    expect(parse("18", "11", "2026")).toMatchObject({ ok: true });
+    expect(parse("17", "11", "2026")).toMatchObject({ ok: true });
+  });
+
+  it("does not call a date without a year a future one", () => {
+    expect(parse("25", "12", "")).toMatchObject({ ok: true });
+  });
+
+  it("shows the missing day before the bad year", () => {
+    expect(parse("", "11", "1899")).toEqual({ ok: false, message: MISSING });
+  });
+
+  it("shows the bad year before the missing date", () => {
+    expect(parse("31", "4", "1899")).toEqual({ ok: false, message: BAD_YEAR });
+  });
+});
+
+describe("contactSchema: birthday", () => {
+  it("saves three empty parts as no birthday", () => {
+    const contact = contactSchema.parse(contactForm());
+    expect(contact).toMatchObject({ birthdayDay: null, birthdayMonth: null, birthdayYear: null });
+  });
+
+  it("saves the three numbers", () => {
+    const contact = contactSchema.parse(
+      contactForm({ birthdayDay: "25", birthdayMonth: "11", birthdayYear: "1990" }),
+    );
+    expect(contact).toMatchObject({ birthdayDay: 25, birthdayMonth: 11, birthdayYear: 1990 });
+  });
+
+  it("puts one error under the day, the first field of the birthday", () => {
+    const result = contactSchema.safeParse(contactForm({ birthdayMonth: "11" }));
+    expect(result.success).toBe(false);
+    expect(result.error?.issues).toEqual([
+      expect.objectContaining({ path: ["birthdayDay"], message: "Укажите день и месяц" }),
+    ]);
+  });
+
+  it("shows the year limit of the current year", () => {
+    const year = new Date().getFullYear();
+    const result = contactSchema.safeParse(
+      contactForm({ birthdayDay: "1", birthdayMonth: "1", birthdayYear: String(year + 1) }),
+    );
+    expect(result.error?.issues[0].message).toBe(`Укажите год от 1900 до ${year}`);
+  });
+
+  it("does not hide a birthday error behind an error of another field", () => {
+    const result = contactSchema.safeParse({
+      ...contactForm({ birthdayMonth: "11" }),
+      name: "",
+    });
+    const paths = result.error?.issues.map((issue) => issue.path[0]);
+    expect(paths).toEqual(expect.arrayContaining(["name", "birthdayDay"]));
   });
 });

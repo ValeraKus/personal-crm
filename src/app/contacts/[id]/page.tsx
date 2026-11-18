@@ -12,7 +12,13 @@ import { PixelIcon } from "@/components/pixel-icon";
 import { Button } from "@/components/ui/button";
 import { Window } from "@/components/window";
 import { getContact, listContactGroups, listNotes } from "@/db/queries";
-import { formatDueDate, formatNoteDate, formatOverdue, pluralize } from "@/lib/format";
+import {
+  formatBirthdayCard,
+  formatDueDate,
+  formatNoteDate,
+  formatOverdue,
+  pluralize,
+} from "@/lib/format";
 import { parseContactId } from "@/lib/ids";
 import { getTermStatus, isFrequency } from "@/lib/keep-in-touch";
 import { requireUser } from "@/lib/session";
@@ -49,6 +55,11 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
         lastNoteAt: notes[0]?.createdAt ?? null,
       })
     : null;
+  // Day and month are stored together (a database check), so one of them is enough to tell
+  const birthday =
+    contact.birthdayDay !== null && contact.birthdayMonth !== null
+      ? { day: contact.birthdayDay, month: contact.birthdayMonth, year: contact.birthdayYear }
+      : null;
 
   return (
     <div className="flex flex-col gap-4 sm:gap-5">
@@ -125,6 +136,9 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
                 {contact.email}
               </a>
             ) : null}
+          </DetailRow>
+          <DetailRow label="Дата рождения">
+            {birthday ? formatBirthdayCard(birthday, new Date()) : null}
           </DetailRow>
         </dl>
       </Window>

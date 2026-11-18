@@ -1,3 +1,4 @@
+import { calendarDate, dayNumber } from "@/lib/calendar";
 import { pluralize } from "@/lib/format";
 
 export const FREQUENCIES = ["week", "month", "quarter", "year", "days"] as const;
@@ -41,11 +42,6 @@ export type TermStatus = {
   overdueDays: number;
 };
 
-// Calendar date in the process time zone, the same one the note dates are shown in
-function calendarDate(date: Date) {
-  return { year: date.getFullYear(), month: date.getMonth(), day: date.getDate() };
-}
-
 // 31 Jan + 1 month = 28 Feb (or 29): the day is clamped to the end of the target month
 function addMonths(date: Date, months: number) {
   const { year, month, day } = calendarDate(date);
@@ -56,11 +52,6 @@ function addMonths(date: Date, months: number) {
 function addDays(date: Date, days: number) {
   const { year, month, day } = calendarDate(date);
   return new Date(year, month, day + days);
-}
-
-function dayNumber(date: Date) {
-  const { year, month, day } = calendarDate(date);
-  return Date.UTC(year, month, day) / 86_400_000;
 }
 
 // Single place for the term rules: the home block and the contact card both use it.

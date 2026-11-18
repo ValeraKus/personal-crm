@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AddedContactNotice } from "@/components/added-contact-notice";
+import { BirthdaysBlock } from "@/components/birthdays-block";
 import { ContactAvatar } from "@/components/contact-avatar";
 import { ContactSearch } from "@/components/contact-search";
 import { KeepInTouchBlock } from "@/components/keep-in-touch-block";
@@ -11,10 +12,12 @@ import { Window } from "@/components/window";
 import {
   countContacts,
   listContacts,
+  listContactsWithBirthday,
   listContactsWithTerm,
   listGroups,
   type ContactListItem,
 } from "@/db/queries";
+import { upcomingBirthdays } from "@/lib/birthdays";
 import { formatContactCount, formatFoundCount, groupLetter } from "@/lib/format";
 import {
   contactListHref,
@@ -48,6 +51,10 @@ async function listOverdueContacts(ownerId: string) {
   return overdueContacts(await listContactsWithTerm(ownerId), new Date());
 }
 
+async function listUpcomingBirthdays(ownerId: string) {
+  return upcomingBirthdays(await listContactsWithBirthday(ownerId), new Date());
+}
+
 export default async function ContactsPage({ searchParams }: PageProps<"/">) {
   const user = await requireUser();
   const params = await searchParams;
@@ -58,11 +65,12 @@ export default async function ContactsPage({ searchParams }: PageProps<"/">) {
   const selectedIds = selectedGroupIds(params.group, allGroups);
   const filtered = query !== "" || selectedIds.length > 0;
 
-  // The block is hidden while searching or filtering, so its query is skipped too
-  const [items, total, overdue] = await Promise.all([
+  // The blocks are hidden while searching or filtering, so their queries are skipped too
+  const [items, total, overdue, birthdays] = await Promise.all([
     listContacts(user.id, query, selectedIds),
     countContacts(user.id),
     filtered ? [] : listOverdueContacts(user.id),
+    filtered ? [] : listUpcomingBirthdays(user.id),
   ]);
   const groups = groupByLetter(items);
   const added = addedId === null ? undefined : items.find((item) => item.id === addedId);
@@ -88,9 +96,11 @@ export default async function ContactsPage({ searchParams }: PageProps<"/">) {
         <GroupFilter groups={allGroups} selectedIds={selectedIds} query={query} />
       ) : null}
 
+      {birthdays.length > 0 ? <BirthdaysBlock contacts={birthdays} /> : null}
+
       {overdue.length > 0 ? <KeepInTouchBlock contacts={overdue} /> : null}
 
-      <Window title="контакты.exe" bar="accent" controls={3}>
+      <Window title="контакты.exe" bar="lilac" controls={3}>
         <div className="sticky top-0 z-10 border-b-2 border-ink bg-white p-3 sm:p-4">
           <ContactSearch query={query} groupIds={selectedIds} />
         </div>

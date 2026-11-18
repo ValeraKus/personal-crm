@@ -85,6 +85,8 @@ type ContactSeed = {
   notes?: { body: string; createdAt: Date }[];
   // Groups of the contact, from insertGroup
   groupIds?: number[];
+  // Birthday: the year is optional; month is 1-12
+  birthday?: { day: number; month: number; year: number | null };
 };
 
 // A contact with its term and notes already in the past: the only way to get an overdue contact
@@ -100,6 +102,9 @@ export async function insertContact(seed: ContactSeed) {
         keepInTouchFrequency: seed.frequency ?? null,
         keepInTouchDays: seed.days ?? null,
         keepInTouchSince: seed.since ?? null,
+        birthdayDay: seed.birthday?.day ?? null,
+        birthdayMonth: seed.birthday?.month ?? null,
+        birthdayYear: seed.birthday?.year ?? null,
       })
       .returning({ id: contacts.id });
     if (seed.notes?.length) {

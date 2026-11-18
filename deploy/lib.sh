@@ -10,7 +10,7 @@ STAGING_DIR=/srv/personal-crm-staging
 BACKUP_DIR=backups
 BACKUP_KINDS="deploy daily manual"
 BACKUPS_TO_KEEP=7
-# After a prod deploy, app images built more than this many days ago are removed from the server,
+# After a prod deploy, app images that came to the server more than this many days ago are removed,
 # except the ones images_to_keep names
 IMAGE_MAX_AGE_DAYS=14
 # How long a deploy, a rollback or a restore waits for another one of the same environment
@@ -98,19 +98,23 @@ images_to_keep() {
   release_image "$STAGING_DIR/next-release.yaml"
 }
 
-# Removes images of the app repository built more than IMAGE_MAX_AGE_DAYS days ago, except
-# images_to_keep. An image that cannot be removed is reported and skipped.
+# Removes images of the app repository that came to the server more than IMAGE_MAX_AGE_DAYS days
+# ago, except images_to_keep. The age is counted from the pull (the time docker tagged the image here),
+# not from the build date: cached builds keep the build date of an older image. An image without that
+# time is kept; an image that cannot be removed is reported and skipped.
 remove_old_images() {
-  local repository=$1 keep cutoff old created
+  local repository=$1 keep cutoff old pulled
   keep=$(images_to_keep)
   cutoff=$(date -d "$IMAGE_MAX_AGE_DAYS days ago" +%s)
   docker image ls "$repository" --format '{{.Repository}}:{{.Tag}}' | while read -r old; do
     if [[ $old == *:"<none>" ]] || grep -qxF "$old" <<< "$keep"; then
       continue
     fi
-    created=$(docker image inspect --format '{{.Created}}' "$old") || continue
-    if [ "$(date -d "$created" +%s || echo "$cutoff")" -lt "$cutoff" ]; then
-      docker image rm "$old" > /dev/null && log "Removed $old (built $created)" || log "Could not remove $old"
+    pulled=$(docker image inspect --format '{{.Metadata.LastTagTime.Unix}}' "$old") || continue
+    if [[ $pulled =~ ^[0-9]+$ ]] && [ "$pulled" -gt 0 ] && [ "$pulled" -lt "$cutoff" ]; then
+      docker image rm "$old" > /dev/null \
+        && log "Removed $old (pulled $(date -d "@$pulled" '+%Y-%m-%d'))" \
+        || log "Could not remove $old"
     fi
   done
 }

@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Deploys one app image to one environment:
 #   prod:    pull -> database backup -> migrations -> new app container -> smoke check of /health
+#            -> removal of old app images from the server
 #   staging: pull -> migrations -> new app container -> smoke check of /health (no backup: staging is a
 #            copy of prod, recreated from a prod backup with refresh-staging.sh)
 # GitHub Actions runs it over SSH: deploy.sh <staging|prod> <image> <registry user>, with a registry
-# token on stdin. It never rolls back by itself: on failure it stops and reports. Rollback is manual.
+# token on stdin. Staging is deployed on every push to main ("Deploy staging"), prod only by hand
+# ("Deploy prod"). It never rolls back by itself: on failure it stops and reports. Rollback is manual.
 set -euo pipefail
 cd "$(dirname "$0")"
 source ./lib.sh
@@ -42,7 +44,7 @@ compose -f compose.yaml -f next-release.yaml up -d --wait --quiet-pull db
 
 # The backup is named after the version running now; if it fails, nothing else happens
 if [ "$ENVIRONMENT" = prod ]; then
-  ./backup.sh || fail "backup failed: migrations not run, the app keeps running the previous version"
+  backup_database deploy || fail "backup failed: migrations not run, the app keeps running the previous version"
 fi
 
 log "Applying migrations"
@@ -66,12 +68,9 @@ if ! smoke_check "${image##*:}"; then
   fail "smoke check failed; logs: ./compose.sh $ENVIRONMENT logs app"
 fi
 
-log "Removing old app images: keeping the current and the previous release of each environment"
-in_use=$(images_in_use)
-docker image ls "${image%:*}" --format '{{.Repository}}:{{.Tag}}' | while read -r old; do
-  if ! grep -qxF "$old" <<< "$in_use"; then
-    docker image rm "$old" > /dev/null && log "Removed $old" || log "Could not remove $old"
-  fi
-done
+if [ "$ENVIRONMENT" = prod ]; then
+  log "Removing app images built more than $IMAGE_MAX_AGE_DAYS days ago, except the current and the previous release of prod and the current release of staging"
+  remove_old_images "${image%:*}"
+fi
 
 log "Deployed $image to $ENVIRONMENT"

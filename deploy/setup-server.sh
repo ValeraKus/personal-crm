@@ -2,8 +2,9 @@
 # One-time server setup for deploys, run as root from a copy of deploy/:
 #   setup-server.sh ["<public SSH key of GitHub Actions>"]
 # The server is shared with the landing, so it only adds our own things: the deploy user, the
-# directories of prod and staging, the nginx sites of the app and of staging, and the certificate
-# of staging. Safe to run again: what is already in place stays as it is.
+# directories of prod and staging, the nginx sites of the app and of staging, the certificate of
+# staging and the timer of the daily prod backup. Safe to run again: what is already in place stays
+# as it is.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -97,5 +98,18 @@ EOF
 fi
 
 install_site "nginx/$staging_domain.conf" "$staging_domain.conf"
+
+# Daily backup of the prod database at 03:00 Moscow time: a systemd timer runs backup.sh daily as deploy
+units_changed=""
+for unit in personal-crm-backup.service personal-crm-backup.timer; do
+  if ! cmp -s "systemd/$unit" "/etc/systemd/system/$unit"; then
+    install -m 644 "systemd/$unit" "/etc/systemd/system/$unit"
+    units_changed=yes
+    echo "systemd: $unit installed"
+  fi
+done
+[ -z "$units_changed" ] || systemctl daemon-reload
+systemctl enable --now personal-crm-backup.timer
+systemctl list-timers personal-crm-backup.timer --no-pager
 
 echo "Server is ready for deploys"

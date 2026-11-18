@@ -1,0 +1,186 @@
+# Deploys to prod by hand: Actions -> Deploy prod -> Run workflow. Only a version that passed staging
+# goes to prod, and it gets the same image (tagged with the commit SHA) and the same deploy scripts:
+#   - SHA empty: the SHA of the latest green "Deploy staging" run
+#   - SHA given: the fallback; the SHA must have a green "Deploy staging" run
+#   - rollback ticked: prod goes back to the version before the current one, which the server
+#     remembers (rollback.sh); the SHA field is ignored and staging is not checked
+# A deploy runs deploy.sh prod on the server: backup -> migrations -> new app -> smoke check of /health.
+# After a successful deploy old images are removed: on the server by deploy.sh, in GHCR by
+# prune-registry.sh. Nothing rolls back by itself: a failed deploy stops and reports.
+# The run summary shows which version prod ran before and runs now.
+name: Deploy prod
+run-name: ${{ inputs.rollback && 'Roll back prod' || format('Deploy {0} to prod', inputs.sha || 'the latest staging version') }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Commit SHA to deploy. Leave empty to deploy the latest version that passed staging"
+        required: false
+        type: string
+        default: ""
+      rollback:
+        description: "Roll back prod to the version before the current one (the SHA field is ignored)"
+        required: false
+        type: boolean
+        default: false
+
+# One prod deploy or rollback at a time; deploy.sh and rollback.sh also lock prod on the server
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/valerakus/personal-crm
+  APP_DIR: /srv/personal-crm
+  APP_URL: https://app.context-crm.site
+  # The workflow whose green runs are the history of staging deploys
+  STAGING_WORKFLOW: deploy-staging.yml
+  # How many builds GHCR keeps
+  BUILDS_TO_KEEP: 10
+
+jobs:
+  resolve:
+    name: Check the version
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+    steps:
+      - name: Only from main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Deploy prod runs only from main, not from $GITHUB_REF_NAME: pick main in \"Use workflow from\""
+          exit 1
+
+      - name: Find the version that passed staging
+        id: sha
+        if: ${{ !inputs.rollback }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          INPUT_SHA: ${{ inputs.sha }}
+        run: |
+          requested=$(printf '%s' "$INPUT_SHA" | tr -d '[:space:]' | tr 'A-F' 'a-f')
+          if [ -n "$requested" ] && ! [[ $requested =~ ^[0-9a-f]{7,40}$ ]]; then
+            echo "::error::\"$requested\" is not a commit SHA: use 7 to 40 characters 0-9 a-f, or leave the field empty"
+            exit 1
+          fi
+
+          # SHAs of the green staging deploys from main, newest first
+          passed=$(gh run list --workflow "$STAGING_WORKFLOW" --branch main --event push --status success \
+            --limit 200 --json headSha --jq '.[].headSha')
+
+          if [ -z "$requested" ]; then
+            sha=$(head -n 1 <<< "$passed")
+            if [ -z "$sha" ]; then
+              echo "::error::No green Deploy staging run yet: merge to main and wait until staging is deployed"
+              exit 1
+            fi
+            echo "The latest version that passed staging: $sha"
+          else
+            matches=$(grep "^$requested" <<< "$passed" | sort -u || true)
+            if [ -z "$matches" ]; then
+              echo "::error::$requested has no green Deploy staging run (among the latest 200): it did not pass staging, so it does not go to prod"
+              exit 1
+            fi
+            if [ "$(wc -l <<< "$matches")" -gt 1 ]; then
+              echo "::error::$requested matches several versions, give more characters of the SHA"
+              exit 1
+            fi
+            sha=$matches
+            echo "$sha passed staging"
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: ${{ inputs.rollback && 'Roll back prod' || 'Deploy prod' }}
+    needs: resolve
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    env:
+      SHA: ${{ needs.resolve.outputs.sha }}
+    steps:
+      # main: the SSH step of this workflow
+      - uses: actions/checkout@v7
+
+      # The deploy scripts and compose.yaml of the version itself, the same that staging ran
+      - name: Check out the deploy scripts of the version
+        if: ${{ !inputs.rollback }}
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          path: release
+          sparse-checkout: deploy
+
+      - uses: ./.github/actions/server-ssh
+        with:
+          ssh-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          known-hosts: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+          host: ${{ vars.DEPLOY_HOST }}
+          user: ${{ vars.DEPLOY_USER }}
+
+      - name: Version before
+        id: before
+        run: echo "version=$(curl -fsS --max-time 10 "$APP_URL/health" | jq -r '.version // empty')" >> "$GITHUB_OUTPUT"
+
+      - name: Copy deploy scripts to the server
+        if: ${{ !inputs.rollback }}
+        run: tar -C release/deploy -cf - . | ssh server "tar -xf - --no-overwrite-dir -C $APP_DIR"
+
+      - name: Deploy
+        if: ${{ !inputs.rollback }}
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GHCR_TOKEN" | ssh server "$APP_DIR/deploy.sh prod $IMAGE:$SHA $GITHUB_ACTOR"
+
+      - name: Roll back
+        if: ${{ inputs.rollback }}
+        run: ssh server "$APP_DIR/rollback.sh" < /dev/null
+
+      - name: Summary
+        if: always()
+        env:
+          ROLLBACK: ${{ inputs.rollback }}
+          JOB_STATUS: ${{ job.status }}
+          BEFORE: ${{ steps.before.outputs.version }}
+        run: |
+          now=$(curl -fsS --max-time 10 "$APP_URL/health" | jq -r '.version // empty')
+          if [ "$ROLLBACK" = true ]; then action="Rollback of prod"; else action="Deploy of \`$SHA\` to prod"; fi
+          if [ "$JOB_STATUS" = success ]; then result="done"; else result="FAILED, see the failed step"; fi
+          {
+            echo "### $action: $result"
+            echo
+            echo "| | Version |"
+            echo "| --- | --- |"
+            echo "| Before | ${BEFORE:-no answer from /health} |"
+            echo "| Now | ${now:-no answer from /health} |"
+            echo
+            echo "Check: $APP_URL/health"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  prune-registry:
+    name: Remove old images from GHCR
+    needs: deploy
+    if: ${{ !inputs.rollback }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Keep the newest builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: deploy/prune-registry.sh "$GITHUB_REPOSITORY_OWNER" personal-crm "$BUILDS_TO_KEEP"

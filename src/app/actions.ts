@@ -44,6 +44,9 @@ const CONTACT_FIELDS: ContactField[] = [
   "email",
   "keepInTouchFrequency",
   "keepInTouchDays",
+  "birthdayDay",
+  "birthdayMonth",
+  "birthdayYear",
 ];
 
 function readContactForm(formData: FormData) {

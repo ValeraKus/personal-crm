@@ -127,6 +127,11 @@ export const contacts = pgTable(
     keepInTouchDays: smallint("keep_in_touch_days"),
     // When the frequency was last set or changed: the start of the term if there are no notes
     keepInTouchSince: timestamp("keep_in_touch_since", { withTimezone: true }),
+    // Birthday as the three numbers a person types: day and month go together, the year is optional
+    // and only with them. A date without a year is not a date, so no year is invented for it.
+    birthdayDay: smallint("birthday_day"),
+    birthdayMonth: smallint("birthday_month"),
+    birthdayYear: smallint("birthday_year"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -143,6 +148,32 @@ export const contacts = pgTable(
     check(
       "contacts_keep_in_touch_since_check",
       sql`(${table.keepInTouchFrequency} is not null) = (${table.keepInTouchSince} is not null)`,
+    ),
+    // Day and month are set together or not at all; a year needs both
+    check(
+      "contacts_birthday_parts_check",
+      sql`(${table.birthdayDay} is null) = (${table.birthdayMonth} is null) and (${table.birthdayYear} is null or ${table.birthdayDay} is not null)`,
+    ),
+    // "Year not later than this year" and "not in the future" are checked by the server only:
+    // a constraint cannot depend on today's date
+    check(
+      "contacts_birthday_range_check",
+      sql`${table.birthdayDay} between 1 and 31 and ${table.birthdayMonth} between 1 and 12 and ${table.birthdayYear} >= 1900`,
+    ),
+    // The day exists in the month. With no year, February has 29 days; with a year, the leap year
+    // rule decides (1900 is not a leap year, 2000 is).
+    check(
+      "contacts_birthday_day_check",
+      sql`${table.birthdayDay} <= case
+        when ${table.birthdayMonth} in (4, 6, 9, 11) then 30
+        when ${table.birthdayMonth} = 2 then
+          case
+            when ${table.birthdayYear} is null then 29
+            when (${table.birthdayYear} % 4 = 0 and ${table.birthdayYear} % 100 <> 0) or ${table.birthdayYear} % 400 = 0 then 29
+            else 28
+          end
+        else 31
+      end`,
     ),
   ],
 );

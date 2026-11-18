@@ -10,9 +10,10 @@ import { randomUUID } from "node:crypto";
 import { type Page } from "@playwright/test";
 
 import { requestLink } from "./auth";
+import { birthdayInDays } from "./dates";
 import { expect, test } from "./fixtures";
 import { waitForLoginLink } from "./mailpit";
-import { makeOverdue } from "./test-database";
+import { insertContact, makeOverdue } from "./test-database";
 
 function listRegion(page: Page) {
   return page.getByRole("region", { name: /^На букву/ });
@@ -24,6 +25,10 @@ function listLink(page: Page, name: string) {
 
 function keepInTouchBlock(page: Page) {
   return page.getByRole("region", { name: "Пора связаться" });
+}
+
+function birthdaysBlock(page: Page) {
+  return page.getByRole("region", { name: "Скоро день рождения" });
 }
 
 function filterNav(page: Page) {
@@ -121,7 +126,7 @@ test("two users do not see each other's contacts", async ({ page, otherUser }) =
   });
 });
 
-test("groups and overdue contacts of one user are not seen by the other", async ({
+test("groups, overdue contacts and birthdays of one user are not seen by the other", async ({
   page,
   otherUser,
 }) => {
@@ -132,12 +137,18 @@ test("groups and overdue contacts of one user are not seen by the other", async 
   await addContact(page, overdue, { group, weekly: true });
   await makeOverdue(overdue);
   await addContact(b, `Борис ${mark}`);
+  // The birthday is today; the test data goes to A, the user of `page`
+  const birthday = `Именинница Вера ${mark}`;
+  await insertContact({ name: birthday, birthday: birthdayInDays(0, 30).birthday });
 
-  await test.step("A sees the group and the overdue contact", async () => {
+  await test.step("A sees the group, the overdue contact and the birthday", async () => {
     await page.goto("/");
     await expect(filterButton(page, group)).toBeVisible();
     await expect(
       keepInTouchBlock(page).getByRole("link", { name: new RegExp(overdue) }),
+    ).toBeVisible();
+    await expect(
+      birthdaysBlock(page).getByRole("link", { name: new RegExp(birthday) }),
     ).toBeVisible();
   });
 
@@ -159,6 +170,12 @@ test("groups and overdue contacts of one user are not seen by the other", async 
     await b.goto("/");
     await expect(keepInTouchBlock(b)).toHaveCount(0);
     await expect(b.getByText(overdue)).toHaveCount(0);
+  });
+
+  await test.step("scenario «Чужие дни рождения не видны»: no block «Скоро день рождения» for B", async () => {
+    await b.goto("/");
+    await expect(birthdaysBlock(b)).toHaveCount(0);
+    await expect(b.getByText(birthday)).toHaveCount(0);
   });
 
   await test.step("scenario «Чужая группа в адресе»: the number is ignored, B sees the whole list", async () => {

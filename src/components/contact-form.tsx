@@ -10,9 +10,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { MONTH_NAMES } from "@/lib/birthdays";
 import { isFrequency } from "@/lib/keep-in-touch";
 import { chooseNewGroup, type ContactField } from "@/lib/validation";
 
@@ -95,6 +97,19 @@ export function ContactForm({
     };
   }
 
+  // The three parts of the birthday share one error, kept under the key of the first part: all of
+  // them are marked invalid and point to the same text
+  function birthdayPartProps(name: "birthdayDay" | "birthdayMonth" | "birthdayYear") {
+    const error = state.fieldErrors?.birthdayDay;
+    return {
+      id: name,
+      name,
+      defaultValue: defaultValues?.[name] ?? "",
+      "aria-invalid": error ? true : undefined,
+      "aria-describedby": error ? "birthdayDay-error" : undefined,
+    };
+  }
+
   function errorFor(name: ContactField) {
     const error = state.fieldErrors?.[name];
     return error ? <FieldError id={`${name}-error`}>{error}</FieldError> : null;
@@ -159,6 +174,41 @@ export function ContactForm({
             {errorFor("email")}
           </Field>
         </div>
+
+        <Field
+          data-invalid={Boolean(state.fieldErrors?.birthdayDay)}
+          aria-labelledby="birthday-label"
+        >
+          <FieldLabel id="birthday-label">Дата рождения</FieldLabel>
+          <div className="grid grid-cols-[2.75rem_7.5rem_minmax(0,1fr)] gap-1.5 sm:grid-cols-[5rem_minmax(0,1fr)_9rem] sm:gap-3">
+            <Input
+              {...birthdayPartProps("birthdayDay")}
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              aria-label="День"
+              className="px-1.5 sm:px-3"
+            />
+            <NativeSelect {...birthdayPartProps("birthdayMonth")} aria-label="Месяц">
+              <NativeSelectOption value="">—</NativeSelectOption>
+              {MONTH_NAMES.map((month, index) => (
+                <NativeSelectOption key={month} value={index + 1}>
+                  {month}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+            <Input
+              {...birthdayPartProps("birthdayYear")}
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              aria-label="Год"
+              placeholder="необязательно"
+              className="px-1.5 placeholder:text-12 sm:px-3 sm:placeholder:text-16"
+            />
+          </div>
+          {errorFor("birthdayDay")}
+        </Field>
 
         <Field data-invalid={Boolean(state.fieldErrors?.keepInTouchDays)}>
           <FieldLabel id="keepInTouchFrequency-label">Как часто общаться</FieldLabel>

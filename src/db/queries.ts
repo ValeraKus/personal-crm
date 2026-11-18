@@ -113,6 +113,23 @@ export async function listContactsWithTerm(ownerId: string) {
     .orderBy(nameOrder, contacts.id);
 }
 
+// Contacts of the owner with a birthday, in the order of the general list. Which of them are
+// celebrating soon is decided by upcomingBirthdays: one set of rules for the block and the card.
+// Day and month are stored together (a database check), so the day alone tells there is a birthday.
+export async function listContactsWithBirthday(ownerId: string) {
+  return getDb()
+    .select({
+      id: contacts.id,
+      name: contacts.name,
+      birthdayDay: contacts.birthdayDay,
+      birthdayMonth: contacts.birthdayMonth,
+      birthdayYear: contacts.birthdayYear,
+    })
+    .from(contacts)
+    .where(and(eq(contacts.ownerId, ownerId), isNotNull(contacts.birthdayDay)))
+    .orderBy(nameOrder, contacts.id);
+}
+
 // Same alphabetical rules as the contact list
 const groupNameOrder = sql`${groups.name} collate "ru-RU-x-icu"`;
 

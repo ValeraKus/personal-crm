@@ -1,3 +1,5 @@
+import { currentAge, MONTH_NAMES, type Birthday, type NextBirthday } from "@/lib/birthdays";
+
 const pluralRules = new Intl.PluralRules("ru-RU");
 
 // pluralize(5, ["контакт", "контакта", "контактов"]) -> "контактов"
@@ -71,4 +73,42 @@ export function formatGroupDeletion(name: string, contactCount: number) {
       ? `, ${contactCount} ${pluralize(contactCount, ["контакт останется", "контакта останутся", "контактов останутся"])} без неё`
       : "";
   return `Группа «${name}» удалится${kept}`;
+}
+
+// "25 ноября", or "25 ноября 1990" when the year is known
+export function formatBirthdayDate({ day, month, year }: Birthday) {
+  const text = `${day} ${MONTH_NAMES[month - 1]}`;
+  return year === null ? text : `${text} ${year}`;
+}
+
+// "1 год", "3 года", "35 лет"
+export function formatAge(age: number) {
+  return `${age} ${pluralize(age, ["год", "года", "лет"])}`;
+}
+
+// "сегодня", "завтра", "через 7 дней"
+export function formatDaysUntil(days: number) {
+  if (days === 0) return "сегодня";
+  if (days === 1) return "завтра";
+  return `через ${days} ${pluralize(days, ["день", "дня", "дней"])}`;
+}
+
+// The line of a contact in the home block: "25 ноября · через 7 дней · исполнится 36".
+// The date is the day of the nearest birthday without a year; "исполнится" only when the year of
+// birth is known.
+export function formatBirthdayRow(next: NextBirthday) {
+  const parts = [
+    formatBirthdayDate({ day: next.date.getDate(), month: next.date.getMonth() + 1, year: null }),
+    formatDaysUntil(next.daysUntil),
+  ];
+  if (next.turning !== null) parts.push(`исполнится ${next.turning}`);
+  return parts.join(" · ");
+}
+
+// The "Дата рождения" line of the contact card: "25 ноября 1990 · 35 лет", "25 ноября" or "Не указано"
+export function formatBirthdayCard(birthday: Birthday | null, now: Date) {
+  if (birthday === null) return "Не указано";
+  const age = currentAge(birthday, now);
+  const date = formatBirthdayDate(birthday);
+  return age === null ? date : `${date} · ${formatAge(age)}`;
 }

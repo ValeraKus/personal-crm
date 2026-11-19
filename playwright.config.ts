@@ -29,12 +29,13 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   // The real app from a fresh build on a real database: build, empty test database, migrations, start.
-  // It starts the same way as in the Docker image: the standalone server with the static files next to it.
+  // It starts the same way as in the Docker image: the standalone server with the static and public files next to it.
   // Playwright starts it before the tests and stops it after them.
   webServer: {
     command: [
       "pnpm build",
       "cp -R .next/static .next/standalone/.next/",
+      "cp -R public .next/standalone/",
       "pnpm exec tsx e2e/prepare-database.ts",
       "pnpm exec tsx scripts/migrate.ts",
       "node .next/standalone/server.js",

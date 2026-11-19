@@ -29,6 +29,8 @@ ENV NODE_ENV=production \
   HOSTNAME=0.0.0.0
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
+# Plain files like favicon.ico: served as they are, without the headers of Next.js cached pages
+COPY --from=build --chown=node:node /app/public ./public
 COPY --from=build /app/build/tools ./tools
 # Git commit of this build, shown by /health
 ARG APP_VERSION=dev

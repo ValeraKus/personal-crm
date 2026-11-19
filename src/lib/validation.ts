@@ -4,6 +4,11 @@ import { daysInMonth } from "@/lib/birthdays";
 import { calendarDate, dayNumber } from "@/lib/calendar";
 import { FREQUENCIES, MAX_DAYS, MIN_DAYS, type Frequency } from "@/lib/keep-in-touch";
 
+// No eval in zod: to speed up objects it tries `new Function`, and the Content-Security-Policy of
+// the app (next.config.ts) blocks it and reports a violation in the browser console. The contact
+// form loads these schemas in the browser. Must run before the first schema below is created.
+z.config({ jitless: true });
+
 // Messages here are shown to the user in the UI, so they are in Russian
 
 function optionalText(maxLength: number) {

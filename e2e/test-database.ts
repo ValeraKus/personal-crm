@@ -74,6 +74,39 @@ export async function insertContacts(names: string[]) {
   });
 }
 
+// "Контакт 001", "Контакт 002", …: the number is padded with zeros, so the names are in the order of
+// the list. The paging tests need hundreds of contacts: one insert, not one query per contact.
+export function numberedNames(total: number, prefix = "Контакт") {
+  const width = Math.max(3, String(total).length);
+  return Array.from(
+    { length: total },
+    (_, index) => `${prefix} ${String(index + 1).padStart(width, "0")}`,
+  );
+}
+
+// Puts `total` numbered contacts to the user of the test, all in the group when it is given.
+// Returns their names, in the order of the list.
+export async function insertNumberedContacts(
+  total: number,
+  options: { prefix?: string; groupId?: number } = {},
+) {
+  const names = numberedNames(total, options.prefix);
+  await withTestDb(async (db) => {
+    const ownerId = await currentOwnerId(db);
+    const inserted = await db
+      .insert(contacts)
+      .values(names.map((name) => ({ name, ownerId })))
+      .returning({ id: contacts.id });
+    if (options.groupId !== undefined) {
+      const groupId = options.groupId;
+      await db
+        .insert(contactGroups)
+        .values(inserted.map((contact) => ({ contactId: contact.id, groupId })));
+    }
+  });
+  return names;
+}
+
 type ContactSeed = {
   name: string;
   phone?: string;

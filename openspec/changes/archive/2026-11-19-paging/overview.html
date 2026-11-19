@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Пагинация списка — обзор</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Press+Start+2P&family=Rubik+Mono+One&display=swap" rel="stylesheet">
+<style>
+/* Values copied from src/styles/tokens.css, same variable names */
+:root {
+  --color-ink: #241a3a;
+  --color-ink-deep: #000000;
+  --color-ink-soft: #463a5e;
+  --color-ink-muted: #5a4e72;
+  --color-ink-faint: #6a5a8c;
+  --color-bevel: #5a4a80;
+  --color-paper: #f1eaff;
+  --color-grid: #dccffa;
+  --color-white: #ffffff;
+  --color-accent: #ff8fc7;
+  --color-lilac: #c9b6ff;
+  --color-violet: #7b4fe0;
+  --color-butter: #fff4b0;
+  --color-danger: #c2185b;
+  --leading-heading: 1.12;
+  --leading-body: 1.5;
+  --leading-card: 1.45;
+  --shadow-px-sm: 3px 3px 0 var(--color-ink);
+  --shadow-px: 4px 4px 0 var(--color-ink);
+  --shadow-px-md: 6px 6px 0 var(--color-ink);
+  --shadow-bevel: inset -4px -4px 0 var(--color-ink-deep), inset 4px 4px 0 var(--color-bevel);
+  --font-sans: "Golos Text", system-ui, sans-serif;
+  --font-display: "Rubik Mono One", monospace;
+  --font-pixel: "Press Start 2P", monospace;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--color-paper);
+  background-image:
+    linear-gradient(var(--color-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.page { max-width: 880px; margin: 0 auto; padding: 36px 16px 80px; }
+header.top { font-family: var(--font-pixel); font-size: 11px; color: var(--color-ink-faint); display: flex; gap: 10px; align-items: center; }
+.sq { display: inline-block; width: 10px; height: 10px; background: var(--color-accent); border: 2px solid var(--color-ink); flex-shrink: 0; }
+h1 { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; font-size: 40px; line-height: var(--leading-heading); margin: 18px 0 14px; }
+h2 { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; font-size: 24px; line-height: var(--leading-heading); margin: 60px 0 18px; display: flex; align-items: baseline; gap: 14px; }
+h2 .num { font-family: var(--font-pixel); font-size: 12px; background: var(--color-accent); border: 2px solid var(--color-ink); padding: 6px 8px; box-shadow: var(--shadow-px-sm); }
+h3 { font-size: 18px; font-weight: 700; margin: 28px 0 10px; }
+p { margin: 8px 0; }
+.lead { font-size: 18px; color: var(--color-ink-soft); max-width: 700px; }
+.muted { color: var(--color-ink-muted); }
+.small { font-size: 14px; }
+code { font-family: ui-monospace, Menlo, monospace; font-size: 0.86em; background: var(--color-white); border: 1px solid var(--color-lilac); padding: 1px 5px; }
+ul.points { padding-left: 20px; margin: 8px 0; }
+ul.points li { margin: 5px 0; }
+.card { background: var(--color-white); border: 2px solid var(--color-ink); box-shadow: var(--shadow-px-md); padding: 18px 22px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--color-white); border: 1.5px solid var(--color-ink); font-size: 13px; font-weight: 600; }
+.chip.wait { background: var(--color-butter); }
+.chip.plan { background: var(--color-lilac); }
+
+/* Screen sketches */
+.screens { display: grid; gap: 34px; }
+.screen-title { font-family: var(--font-pixel); font-size: 11px; margin: 0 0 10px; line-height: 1.6; }
+.device { background: var(--color-paper); border: 2px solid var(--color-ink); box-shadow: var(--shadow-px-md); padding: 0 16px 18px; overflow: hidden; }
+.device.phone { max-width: 340px; padding: 0 10px 14px; }
+.urlbar { margin: 0 -16px 14px; padding: 7px 12px; background: var(--color-white); border-bottom: 2px solid var(--color-ink); font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--color-ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.phone .urlbar { margin: 0 -10px 12px; }
+.urlbar b { color: var(--color-violet); font-weight: 600; }
+.appbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.logo { font-family: var(--font-pixel); font-size: 11px; }
+.who-am-i { font-size: 12px; color: var(--color-ink-muted); display: flex; gap: 8px; align-items: center; }
+.btn-out { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 2px solid var(--color-ink); background: var(--color-white); box-shadow: var(--shadow-px-sm); font-family: var(--font-pixel); font-size: 9px; padding: 8px 12px; white-space: nowrap; }
+.btn-dark { display: inline-flex; align-items: center; gap: 8px; background: var(--color-ink); color: var(--color-white); box-shadow: var(--shadow-bevel); font-family: var(--font-pixel); font-size: 9px; padding: 12px 14px; white-space: nowrap; }
+.btn-dark .plus { color: var(--color-accent); }
+.title-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; margin-bottom: 14px; }
+.title-row .h { font-family: var(--font-display); text-transform: uppercase; font-size: 26px; line-height: 1; }
+.title-row .count { font-family: var(--font-pixel); font-size: 9px; color: var(--color-ink-faint); margin-top: 10px; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 14px; }
+.badge { font-family: var(--font-pixel); font-size: 8px; border: 1.5px solid var(--color-ink); background: var(--color-white); padding: 6px 8px; }
+.badge.on { background: var(--color-accent); }
+.badges .manage { margin-left: auto; font-size: 12px; }
+.win { border: 2px solid var(--color-ink); background: var(--color-white); box-shadow: var(--shadow-px-md); margin-bottom: 16px; }
+.win:last-child { margin-bottom: 0; }
+.bar { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border-bottom: 2px solid var(--color-ink); font-family: var(--font-pixel); font-size: 9px; }
+.bar .t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar.lilac { background: var(--color-lilac); }
+.bar.accent { background: var(--color-accent); }
+.bar.butter { background: var(--color-butter); }
+.ctrl { display: flex; gap: 5px; }
+.ctrl i { width: 12px; height: 12px; border: 2px solid var(--color-ink); background: var(--color-white); }
+.ctrl i:last-child { background: var(--color-ink); }
+.searchbox { padding: 10px; border-bottom: 2px solid var(--color-ink); }
+.searchbox div { border: 2px solid var(--color-ink); padding: 7px 10px; font-size: 13px; color: var(--color-ink-faint); }
+.searchbox div.filled { color: var(--color-ink); }
+.letter { padding: 5px 14px; background: var(--color-paper); border-bottom: 2px solid var(--color-ink); font-family: var(--font-pixel); font-size: 9px; }
+.row { display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-bottom: 2px dashed var(--color-lilac); }
+.row.hl { background: var(--color-butter); }
+.av { width: 32px; height: 32px; flex-shrink: 0; border: 2px solid var(--color-ink); background: var(--color-lilac); font-family: var(--font-pixel); font-size: 8px; display: flex; align-items: center; justify-content: center; }
+.row .who { flex: 1; min-width: 0; }
+.row .name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .meta { font-size: 13px; color: var(--color-ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .meta b { color: var(--color-danger); font-weight: 500; }
+.row .tick { width: 22px; height: 22px; border: 2px solid var(--color-ink); background: var(--color-white); flex-shrink: 0; }
+.skip { padding: 8px 14px; font-size: 12px; color: var(--color-ink-faint); text-align: center; border-bottom: 2px dashed var(--color-lilac); }
+
+/* The new bottom of the list */
+.pager { padding: 14px 12px 16px; display: flex; flex-direction: column; align-items: center; gap: 14px; border-top: 0; }
+.pages { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+.pg { min-width: 32px; height: 32px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; border: 2px solid var(--color-ink); background: var(--color-white); font-family: var(--font-pixel); font-size: 9px; }
+.pg.cur { background: var(--color-ink); color: var(--color-white); }
+.pg.off { opacity: 0.35; }
+.gap { font-family: var(--font-pixel); font-size: 9px; padding: 0 2px; color: var(--color-ink-muted); }
+.spinner { width: 10px; height: 10px; border: 2px solid var(--color-ink); border-right-color: transparent; border-radius: 50%; }
+
+.is-new { position: relative; outline: 2px dashed var(--color-violet); outline-offset: 3px; }
+.new-tag { position: absolute; top: -12px; right: 8px; background: var(--color-violet); color: var(--color-white); font-family: var(--font-pixel); font-size: 7px; letter-spacing: 0.04em; padding: 4px 6px; z-index: 1; }
+.gone { border: 2px dashed var(--color-violet); background: var(--color-white); padding: 10px 12px; font-size: 13px; color: var(--color-ink-soft); margin-bottom: 16px; }
+.toast { display: flex; align-items: center; gap: 8px; margin-top: 14px; background: var(--color-white); border: 2px solid var(--color-ink); box-shadow: var(--shadow-px-sm); padding: 9px 12px; font-size: 13px; font-weight: 600; width: fit-content; }
+.toast::before { content: "✓"; color: var(--color-violet); font-weight: 700; }
+.callouts { margin: 12px 0 0; padding-left: 20px; font-size: 14px; color: var(--color-ink-soft); }
+.callouts li { margin: 4px 0; }
+
+/* Rules */
+.rules { display: grid; gap: 14px; }
+.rule { background: var(--color-white); border: 2px solid var(--color-ink); box-shadow: var(--shadow-px); padding: 14px 18px; }
+.rule .h { font-weight: 700; margin-bottom: 4px; }
+.example { font-size: 14px; color: var(--color-ink-soft); background: var(--color-paper); border-left: 4px solid var(--color-accent); padding: 7px 11px; margin-top: 10px; }
+table.t { border-collapse: collapse; width: 100%; font-size: 14px; margin-top: 8px; }
+table.t th, table.t td { text-align: left; padding: 7px 10px; border-bottom: 2px dashed var(--color-lilac); vertical-align: top; }
+table.t th { color: var(--color-ink-muted); font-weight: 600; }
+table.t td.mono { font-family: var(--font-pixel); font-size: 9px; line-height: 1.8; white-space: nowrap; }
+
+/* Checklist */
+.check-group { margin-bottom: 18px; }
+.check { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; background: var(--color-white); border: 2px solid var(--color-ink); margin: 8px 0; cursor: pointer; }
+.check:hover { background: var(--color-paper); }
+.check input { margin-top: 4px; accent-color: var(--color-violet); width: 16px; height: 16px; flex-shrink: 0; }
+.check .sc { font-weight: 700; }
+.check .st { font-size: 14px; color: var(--color-ink-soft); }
+.check .st .arrow { color: var(--color-violet); font-weight: 700; }
+.auto { display: inline-block; font-family: var(--font-pixel); font-size: 7px; background: var(--color-lilac); border: 1px solid var(--color-ink); padding: 3px 5px; margin-left: 8px; vertical-align: 2px; font-weight: 400; }
+.auto.only { background: var(--color-butter); }
+.prep { background: var(--color-butter); border: 2px solid var(--color-ink); padding: 12px 16px; font-size: 14px; color: var(--color-ink-soft); }
+
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.box h3 { margin-top: 0; }
+.qa + .qa { margin-top: 16px; padding-top: 16px; border-top: 2px dashed var(--color-lilac); }
+footer { margin-top: 64px; font-size: 13px; color: var(--color-ink-faint); }
+
+@media (max-width: 720px) {
+  body { background-size: 26px 26px; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 19px; }
+  .two { grid-template-columns: 1fr; }
+  .device { padding: 0 10px 14px; }
+  .urlbar { margin: 0 -10px 12px; }
+  .row .contacts-col { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="top"><span class="sq"></span>Личная CRM · обзор фичи</header>
+<h1>Пагинация списка</h1>
+<p class="lead">Главная перестаёт показывать все контакты разом: по 100 на странице. Внизу списка — кнопка «Загрузить ещё», чтобы дописать следующие 100, и переключатель страниц, чтобы перейти на нужную.</p>
+<div class="chips">
+  <span class="chip wait">Спроектирована, ещё не сделана</span>
+  <span class="chip">Задачи: 0 из 20</span>
+  <span class="chip plan">Автотесты запланированы на все 33 новых сценария</span>
+  <span class="chip">База не меняется, миграции нет</span>
+</div>
+
+<!-- 1 -->
+<h2><span class="num">1</span>Коротко</h2>
+<ul class="points">
+  <li>Список на главной показывает 100 контактов за раз, в том же алфавитном порядке, что сейчас.</li>
+  <li>«Загрузить ещё» дописывает следующие 100 под уже открытыми. Переключатель («‹ 1 … 4 5 6 … 10 ›») открывает любую страницу.</li>
+  <li>Что открыто, записано в адресе страницы. После «Назад», обновления или в другом браузере видно то же самое.</li>
+  <li>Поиск и фильтр по группам листаются так же. Блоки «Скоро день рождения» и «Пора связаться» видны только на первой странице.</li>
+  <li>Только что добавленный контакт открывается на своей странице, подсвеченным, как сейчас.</li>
+  <li>Статус: <b>спроектирована</b>. Ни одна из 20 задач не отмечена, кода ещё нет. На каждый сценарий из требований запланирован автотест (программа, которая сама проходит сценарий в браузере и сверяет результат).</li>
+</ul>
+
+<!-- 2 -->
+<h2><span class="num">2</span>Что появится на экранах</h2>
+<p class="muted small">Наброски, не точные макеты. Новое обведено фиолетовым пунктиром. Имена и числа выдуманы: у владельца 1000 контактов, это 10 страниц. Над каждым наброском — адрес страницы.</p>
+
+<div class="screens">
+
+  <div>
+    <p class="screen-title">Главная — первая страница</p>
+    <div class="device">
+      <div class="urlbar">app.context-crm.site/</div>
+      <div class="appbar"><span class="logo">Context</span><span class="who-am-i">owner@mail.ru <span class="btn-out">Выйти</span></span></div>
+      <div class="title-row">
+        <div><div class="h">Контакты</div><div class="count">1 000 контактов</div></div>
+        <span class="btn-dark"><span class="plus">+</span>Добавить контакт</span>
+      </div>
+      <div class="win">
+        <div class="bar butter"><span class="t">скоро день рождения.exe</span>2<span class="ctrl"><i></i><i></i><i></i></span></div>
+        <div class="row"><span class="av">ОЛ</span><div class="who"><div class="name">Ольга Лебедева</div><div class="meta">21 ноября · через 2 дня · исполнится 36</div></div></div>
+        <div class="skip" style="border-bottom:0">… ещё 1 …</div>
+      </div>
+      <div class="win">
+        <div class="bar accent"><span class="t">пора связаться.exe</span>14<span class="ctrl"><i></i><i></i><i></i></span></div>
+        <div class="row"><span class="av">ПС</span><div class="who"><div class="name">Пётр Соколов</div><div class="meta">Раз в месяц · <b>просрочено на 12 дней</b></div></div><span class="tick"></span></div>
+        <div class="skip" style="border-bottom:0">… ещё 13 …</div>
+      </div>
+      <div class="win">
+        <div class="bar lilac"><span class="t">контакты.exe</span><span class="ctrl"><i></i><i></i><i></i></span></div>
+        <div class="searchbox"><div>🔍 Найти по имени</div></div>
+        <div class="letter">А</div>
+        <div class="row"><span class="av">АЗ</span><div class="who"><div class="name">Алексей Зайцев</div><div class="meta">Фотограф</div></div></div>
+        <div class="row"><span class="av">АС</span><div class="who"><div class="name">Анна Смирнова</div><div class="meta">Дизайнер интерфейсов</div></div></div>
+        <div class="skip">… всего на странице 100 контактов …</div>
+        <div class="letter">В</div>
+        <div class="row"><span class="av">ВК</span><div class="who"><div class="name">Вера Королёва</div><div class="meta">Соседка по даче</div></div></div>
+        <div class="is-new" style="margin:14px 10px 12px"><span class="new-tag">новое</span>
+          <div class="pager">
+            <span class="btn-out">Загрузить ещё</span>
+            <div class="pages"><span class="pg off">‹</span><span class="pg cur">1</span><span class="pg">2</span><span class="gap">…</span><span class="pg">10</span><span class="pg">›</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ul class="callouts">
+      <li>Счётчик «1 000 контактов» считает все контакты, а не только эту страницу.</li>
+      <li>Блоки над списком — как сейчас. Они есть только на первой странице.</li>
+      <li>На первой странице стрелка «назад» неактивна. Если контактов 100 или меньше, нижней части нет совсем.</li>
+    </ul>
+  </div>
+
+  <div>
+    <p class="screen-title">Главная — пятая страница</p>
+    <div class="device">
+      <div class="urlbar">app.context-crm.site/<b>?page=5</b></div>
+      <div class="title-row">
+        <div><div class="h">Контакты</div><div class="count">1 000 контактов</div></div>
+        <span class="btn-dark"><span class="plus">+</span>Добавить контакт</span>
+      </div>
+      <div class="gone">Блоков «Скоро день рождения» и «Пора связаться» здесь нет — список начинается сразу.</div>
+      <div class="win">
+        <div class="bar lilac"><span class="t">контакты.exe</span><span class="ctrl"><i></i><i></i><i></i></span></div>
+        <div class="searchbox"><div>🔍 Найти по имени</div></div>
+        <div class="is-new" style="margin:6px 6px 0"><span class="new-tag">заголовок буквы повторён</span>
+          <div class="letter" style="border-bottom:0">К</div>
+        </div>
+        <div class="row" style="border-top:2px solid var(--color-ink)"><span class="av">КМ</span><div class="who"><div class="name">Кирилл Морозов</div><div class="meta">Однокурсник</div></div></div>
+        <div class="skip">… контакты с 401-го по 500-й …</div>
+        <div class="is-new" style="margin:14px 10px 12px"><span class="new-tag">новое</span>
+          <div class="pager">
+            <span class="btn-out">Загрузить ещё</span>
+            <div class="pages"><span class="pg">‹</span><span class="pg">1</span><span class="gap">…</span><span class="pg">4</span><span class="pg cur">5</span><span class="pg">6</span><span class="gap">…</span><span class="pg">10</span><span class="pg">›</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ul class="callouts">
+      <li>Буква «К» началась ещё на 4-й странице, поэтому 5-я начинается с заголовка «К».</li>
+      <li>Номер открывает страницу сверху. Стрелки ведут на 4-ю и 6-ю.</li>
+      <li>На последней, 10-й странице нет кнопки «Загрузить ещё», а стрелка «вперёд» неактивна.</li>
+    </ul>
+  </div>
+
+  <div>
+    <p class="screen-title">После «Загрузить ещё» на третьей странице</p>
+    <div class="device">
+      <div class="urlbar">app.context-crm.site/<b>?page=3&amp;to=4</b></div>
+      <div class="win">
+        <div class="bar lilac"><span class="t">контакты.exe</span><span class="ctrl"><i></i><i></i><i></i></span></div>
+        <div class="skip">… контакты с 201-го по 300-й — остались на месте …</div>
+        <div class="letter">Е</div>
+        <div class="row"><span class="av">ЕГ</span><div class="who"><div class="name">Егор Гусев</div><div class="meta">Тренер по теннису</div></div></div>
+        <div class="is-new" style="margin:6px 6px 8px"><span class="new-tag">подгружено</span>
+          <div class="row"><span class="av">ЕД</span><div class="who"><div class="name">Елена Денисова</div><div class="meta">Буква «Е» продолжается без второго заголовка</div></div></div>
+          <div class="skip" style="border-bottom:0">… контакты с 301-го по 400-й …</div>
+        </div>
+        <div class="pager">
+          <span class="btn-out">Загрузить ещё</span>
+          <div class="pages"><span class="pg">‹</span><span class="pg">1</span><span class="pg">2</span><span class="pg cur">3</span><span class="pg cur">4</span><span class="pg">5</span><span class="gap">…</span><span class="pg">10</span><span class="pg">›</span></div>
+        </div>
+      </div>
+    </div>
+    <ul class="callouts">
+      <li>Экран не прыгает: новые 100 появляются под последней строкой.</li>
+      <li>Выделены обе открытые страницы, «3» и «4». Стрелка «назад» ведёт на 2-ю, «вперёд» — на 5-ю.</li>
+      <li>Номер «5» открывает только 5-ю страницу, подгруженное при этом сбрасывается.</li>
+      <li>Пока следующие 100 грузятся, на кнопке крутится значок загрузки.</li>
+    </ul>
+  </div>
+
+  <div class="two">
+    <div>
+      <p class="screen-title">Телефон — пятая страница</p>
+      <div class="device phone">
+        <div class="urlbar">…/<b>?page=5</b></div>
+        <div class="win">
+          <div class="bar lilac"><span class="t">контакты.exe</span><span class="ctrl"><i></i><i></i><i></i></span></div>
+          <div class="skip">… 100 контактов …</div>
+          <div class="is-new" style="margin:14px 8px 12px"><span class="new-tag">новое</span>
+            <div class="pager" style="padding:12px 4px 14px">
+              <span class="btn-out">Загрузить ещё</span>
+              <div class="pages"><span class="pg">‹</span><span class="pg">1</span><span class="gap">…</span><span class="pg cur">5</span><span class="gap">…</span><span class="pg">10</span><span class="pg">›</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <ul class="callouts">
+        <li>Соседних номеров (4 и 6) на телефоне нет, чтобы ряд помещался в ширину без прокрутки вбок.</li>
+      </ul>
+    </div>
+
+    <div>
+      <p class="screen-title">Сразу после добавления контакта</p>
+      <div class="device">
+        <div class="urlbar">…/<b>?page=3</b></div>
+        <div class="win">
+          <div class="bar lilac"><span class="t">контакты.exe</span><span class="ctrl"><i></i><i></i><i></i></span></div>
+          <div class="skip">… 250 контактов, все раньше «Я» …</div>
+          <div class="letter">Я</div>
+          <div class="is-new" style="margin:6px"><span class="new-tag">новое</span>
+            <div class="row hl" style="border-bottom:0"><span class="av">ЯЯ</span><div class="who"><div class="name">Яна Яковлева</div><div class="meta">Подсвечена, прокручено к ней</div></div></div>
+          </div>
+          <div class="pager" style="padding:12px 4px 14px">
+            <div class="pages"><span class="pg">‹</span><span class="pg">1</span><span class="pg">2</span><span class="pg cur">3</span><span class="pg off">›</span></div>
+          </div>
+        </div>
+        <div class="toast">Контакт «Яна Яковлева» добавлен</div>
+      </div>
+      <ul class="callouts">
+        <li>Открывается страница, где контакт стоит по алфавиту, а не первая.</li>
+        <li>В адресе остаётся эта страница: после обновления — та же 3-я, но уже без уведомления.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- 3 -->
+<h2><span class="num">3</span>Как это работает</h2>
+<div class="rules">
+  <div class="rule">
+    <div class="h">На странице — 100 контактов</div>
+    <p>Порядок тот же, что сейчас: по алфавиту, «ё» вместе с «е». Если контактов 100 или меньше, внизу нет ни кнопки, ни переключателя.</p>
+    <div class="example">250 контактов → 3 страницы: с 1-го по 100-й, с 101-го по 200-й, с 201-го по 250-й.<br>Ровно 100 → одна страница, нижней части нет.</div>
+  </div>
+  <div class="rule">
+    <div class="h">Какие номера видны в переключателе</div>
+    <p>Всегда видны первая и последняя страница, открытые страницы и по одной соседней с каждой стороны. Между ними — «…». Если пропущена всего одна страница, вместо «…» стоит её номер.</p>
+    <table class="t">
+      <tr><th>Что открыто</th><th>Что видно</th></tr>
+      <tr><td>3 страницы, открыта 1-я</td><td class="mono">‹ 1 2 3 ›</td></tr>
+      <tr><td>10 страниц, открыта 5-я</td><td class="mono">‹ 1 … 4 5 6 … 10 ›</td></tr>
+      <tr><td>10 страниц, открыты 3-я и 4-я</td><td class="mono">‹ 1 2 3 4 5 … 10 ›</td></tr>
+      <tr><td>Телефон, 10 страниц, открыта 5-я</td><td class="mono">‹ 1 … 5 … 10 ›</td></tr>
+    </table>
+    <p class="small muted" style="margin-top:10px">На телефоне соседних номеров нет, чтобы ряд помещался в ширину. Как при этом выглядят другие страницы — в разделе 6: там нашлась неточность.</p>
+  </div>
+  <div class="rule">
+    <div class="h">Номер и стрелки</div>
+    <ul class="points">
+      <li>Номер открывает только эту страницу, сверху. Даже если до этого были подгружены несколько.</li>
+      <li>«Назад» открывает страницу перед первой открытой, «вперёд» — после последней открытой.</li>
+      <li>На первой странице «назад» неактивна, на последней — «вперёд».</li>
+    </ul>
+  </div>
+  <div class="rule">
+    <div class="h">«Загрузить ещё» дописывает, а не заменяет</div>
+    <p>Следующие 100 появляются под уже открытыми, экран не прыгает. В переключателе выделены все открытые страницы. Когда открыта последняя страница, кнопки нет.</p>
+    <div class="example">На 3-й нажали «Загрузить ещё» → видны контакты с 201-го по 400-й, выделены «3» и «4».<br>На 1-й из трёх нажали дважды → видны все 250, выделены «1 2 3», кнопки больше нет.</div>
+  </div>
+  <div class="rule">
+    <div class="h">Адрес помнит, что открыто</div>
+    <table class="t">
+      <tr><th>Что открыто</th><th>Адрес</th></tr>
+      <tr><td>Первая страница</td><td><code>/</code> — как сейчас</td></tr>
+      <tr><td>Вторая страница</td><td><code>/?page=2</code></td></tr>
+      <tr><td>Третья и подгруженная к ней четвёртая</td><td><code>/?page=3&amp;to=4</code></td></tr>
+    </table>
+    <p style="margin-top:10px">После «Назад» из карточки, обновления страницы или в другом браузере под той же почтой видно то же самое. Поиск и выбранные группы тоже остаются в адресе.</p>
+    <div class="example">В адресе <code>?page=99</code>, а страниц 3 → открыта 3-я.<br><code>?page=abc</code>, <code>?page=0</code>, <code>?page=-1</code> → открыта 1-я.</div>
+  </div>
+  <div class="rule">
+    <div class="h">Поиск и фильтр листаются так же</div>
+    <p>Найденное делится на страницы по тем же правилам. Номера и «Загрузить ещё» сохраняют запрос и группы. Новый запрос, другая группа или «Все» открывают первую страницу.</p>
+    <div class="example">По запросу найдено 150 из 300 → первые 100 найденных, счётчик «Найдено: 150 из 300 контактов», переключатель «1 2».</div>
+  </div>
+  <div class="rule">
+    <div class="h">Счётчик считает все, а не страницу</div>
+    <p>«1 000 контактов» — на любой странице. В поиске — «Найдено: N из M контактов», где N — все найденные, а не те, что на экране.</p>
+  </div>
+  <div class="rule">
+    <div class="h">Заголовки букв</div>
+    <p>Если буква началась на прошлой странице, следующая страница начинается с её заголовка. При «Загрузить ещё» заголовок не повторяется: список продолжается под той же буквой.</p>
+  </div>
+  <div class="rule">
+    <div class="h">Блоки над списком — только на первой странице</div>
+    <p>«Скоро день рождения» и «Пора связаться» видны, когда открыта первая страница, в том числе с подгруженными к ней. На 2-й и дальше их нет. Нажали «1» — блоки снова на месте. Остальные правила блоков (скрыты при поиске и фильтре) не меняются.</p>
+  </div>
+  <div class="rule">
+    <div class="h">Новый контакт — на своей странице</div>
+    <p>После «Добавить контакт» открывается страница, где контакт стоит по алфавиту: строка подсвечена, страница прокручена к ней, уведомление «Контакт «…» добавлен». В адресе остаётся эта страница.</p>
+    <div class="example">Номер чужого или несуществующего контакта в адресе ничего не делает: открыта первая страница, без подсветки и уведомления.</div>
+  </div>
+  <div class="rule">
+    <div class="h">Что остаётся как было</div>
+    <ul class="points">
+      <li>Ссылка «Все контакты» в карточке ведёт на первую страницу. Вернуться на ту же страницу — кнопкой «Назад» браузера.</li>
+      <li>После удаления контакта открывается первая страница.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 5 -->
+<h2><span class="num">4</span>Как проверить руками</h2>
+<p class="small muted">Раздела про модель данных нет: база не меняется, миграции нет.</p>
+<div class="prep">
+  <b>Подготовка.</b> Проверять можно, когда фича будет сделана. Запустите приложение локально (см. README) и войдите под почтой владельца. Если базу заполняли демо-данными (<code>pnpm db:seed</code>), у владельца 1000 контактов — это 10 страниц. Команда ничего не стирает: если контакты уже есть, она ничего не делает.
+  В демо-данных групп нет: для проверок с фильтром сначала добавьте группу паре контактов.
+  Шаги ниже написаны для 1000 контактов, поэтому числа иногда отличаются от примеров из спеки (там 250). Галочки на этой странице только для удобства и не сохраняются.
+</div>
+
+<div class="check-group">
+  <h3>По 100 контактов на странице</h3>
+  <label class="check"><input type="checkbox"><div><div class="sc">Больше 100 контактов<span class="auto">автотест</span></div><div class="st">Открыть главную <span class="arrow">→</span> в списке 100 контактов по алфавиту, внизу «Загрузить ещё» и «‹ 1 2 … 10 ›», выделена «1».</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Ровно 100 контактов<span class="auto only">руками — примерно</span></div><div class="st">Ровно 100 собрать долго, точный случай проверяет автотест. Руками: найти поиском одного человека по полному имени <span class="arrow">→</span> внизу нет ни кнопки, ни переключателя.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Счётчик считает все контакты<span class="auto">автотест</span></div><div class="st">Открыть 1-ю, потом 7-ю страницу <span class="arrow">→</span> над списком оба раза «1 000 контактов».</div></div></label>
+</div>
+
+<div class="check-group">
+  <h3>Переключатель страниц</h3>
+  <label class="check"><input type="checkbox"><div><div class="sc">Переход на страницу<span class="auto">автотест</span></div><div class="st">Внизу нажать «2» <span class="arrow">→</span> другие 100 контактов (продолжают алфавит 1-й страницы), выделена «2», страница открылась сверху.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Последняя страница<span class="auto">автотест</span></div><div class="st">Нажать «10» <span class="arrow">→</span> кнопки «Загрузить ещё» нет, стрелка «вперёд» неактивна. При ровно 1000 на последней странице тоже 100; чтобы увидеть неполную, добавьте контакт — появится 11-я страница с одним контактом.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Стрелки<span class="auto">автотест</span></div><div class="st">На 2-й нажать «вперёд» <span class="arrow">→</span> 3-я. Дважды «назад» <span class="arrow">→</span> 2-я, потом 1-я. На 1-й «назад» неактивна.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Много страниц<span class="auto">автотест</span></div><div class="st">На компьютере открыть 5-ю <span class="arrow">→</span> в переключателе «1 … 4 5 6 … 10».</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Много страниц на телефоне<span class="auto">автотест</span></div><div class="st">Открыть 5-ю на телефоне (или сузить окно браузера до ширины телефона) <span class="arrow">→</span> «1 … 5 … 10», страница не прокручивается вбок.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Буква продолжается на следующей странице<span class="auto">автотест</span></div><div class="st">Запомнить букву последнего контакта на 1-й, открыть 2-ю <span class="arrow">→</span> если 2-я начинается с той же буквы, сверху стоит её заголовок.</div></div></label>
+</div>
+
+<div class="check-group">
+  <h3>Страница в адресе</h3>
+  <label class="check"><input type="checkbox"><div><div class="sc">Обновил страницу<span class="auto">автотест</span></div><div class="st">На 2-й обновить страницу <span class="arrow">→</span> снова 2-я. Скопировать адрес в другой браузер, войти той же почтой <span class="arrow">→</span> та же 2-я.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Страницы с таким номером нет<span class="auto">автотест</span></div><div class="st">Дописать в адрес <code>?page=99</code> <span class="arrow">→</span> открыта 10-я, выделена «10».</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Неверный номер страницы<span class="auto">автотест</span></div><div class="st">По очереди <code>?page=abc</code>, <code>?page=0</code>, <code>?page=-1</code> <span class="arrow">→</span> каждый раз 1-я.</div></div></label>
+</div>
+
+<div class="check-group">
+  <h3>Кнопка «Загрузить ещё»</h3>
+  <label class="check"><input type="checkbox"><div><div class="sc">Подгрузил следующие 100<span class="auto">автотест</span></div><div class="st">На 1-й прокрутить вниз и нажать «Загрузить ещё» <span class="arrow">→</span> под первой сотней появились ещё 100, экран не прыгнул, выделены «1» и «2».</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Подгрузил с середины<span class="auto">автотест</span></div><div class="st">На 3-й нажать «Загрузить ещё» <span class="arrow">→</span> контакты с 201-го по 400-й, выделены «3» и «4». «Назад» <span class="arrow">→</span> 2-я, а если вернуться и нажать «вперёд» <span class="arrow">→</span> 5-я.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Подгрузил до конца<span class="auto">автотест</span></div><div class="st">На 9-й нажать «Загрузить ещё» <span class="arrow">→</span> видны 9-я и 10-я, кнопки больше нет, выделены «9» и «10».</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Буква не повторяется<span class="auto">автотест</span></div><div class="st">На 1-й нажать «Загрузить ещё» <span class="arrow">→</span> подгруженные контакты на ту же букву, что в конце 1-й, идут под тем же заголовком, второго такого заголовка нет.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Вернулся назад или обновил<span class="auto">автотест</span></div><div class="st">Подгрузить 2-ю к 1-й, открыть карточку, нажать «Назад» в браузере <span class="arrow">→</span> те же 200, выделены «1» и «2», прокрутка там же, где была (прокрутку автотест не проверяет). Обновить страницу <span class="arrow">→</span> снова те же 200.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Номер после подгрузки<span class="auto">автотест</span></div><div class="st">Подгрузить 2-ю к 1-й, нажать «5» <span class="arrow">→</span> только 5-я страница, выделена «5».</div></div></label>
+</div>
+
+<div class="check-group">
+  <h3>Страницы в поиске и фильтре по группам</h3>
+  <label class="check"><input type="checkbox"><div><div class="sc">Много найдено<span class="auto">автотест</span></div><div class="st">Найти по частому кусочку имени (например, «ов»), чтобы нашлось больше 100 <span class="arrow">→</span> 100 найденных, «Найдено: N из 1 000 контактов», внизу кнопка и переключатель.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Следующая страница поиска<span class="auto">автотест</span></div><div class="st">Там же нажать «2» или «Загрузить ещё» <span class="arrow">→</span> в поле поиска тот же запрос, в списке только контакты с «ов» в имени.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Сменил запрос<span class="auto">автотест</span></div><div class="st">На 2-й странице поиска изменить текст в поле <span class="arrow">→</span> открыта 1-я страница нового результата.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Включил группу<span class="auto">автотест</span></div><div class="st">На 3-й нажать кнопку группы <span class="arrow">→</span> 1-я страница группы. Снова уйти на 3-ю (без группы) и нажать «Все» <span class="arrow">→</span> 1-я.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Следующая страница группы<span class="auto only">только автотест</span></div><div class="st">Нужна группа больше чем на 100 человек — собирать руками долго. Если такая есть: нажать «2» <span class="arrow">→</span> остальные участники группы, кнопка группы выделена.</div></div></label>
+</div>
+
+<div class="check-group">
+  <h3>Блок «Пора связаться»</h3>
+  <label class="check"><input type="checkbox"><div><div class="sc">Вторая страница списка<span class="auto">автотест</span></div><div class="st">Убедиться, что на 1-й блок есть, открыть 2-ю <span class="arrow">→</span> блока «Пора связаться» нет.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Подгрузил к первой странице<span class="auto">автотест</span></div><div class="st">На 1-й нажать «Загрузить ещё» <span class="arrow">→</span> блок остался над списком.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Вернулся на первую страницу<span class="auto">автотест</span></div><div class="st">На 2-й нажать «1» <span class="arrow">→</span> блок снова виден.</div></div></label>
+</div>
+
+<div class="check-group">
+  <h3>Блок «Скоро день рождения»</h3>
+  <p class="small muted">Если на этой неделе ни у кого нет дня рождения, сначала поставьте дату кому-нибудь из контактов.</p>
+  <label class="check"><input type="checkbox"><div><div class="sc">Вторая страница списка<span class="auto">автотест</span></div><div class="st">Открыть 2-ю <span class="arrow">→</span> блока «Скоро день рождения» нет.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Подгрузил к первой странице<span class="auto">автотест</span></div><div class="st">На 1-й нажать «Загрузить ещё» <span class="arrow">→</span> блок остался.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Вернулся на первую страницу<span class="auto">автотест</span></div><div class="st">На 2-й нажать «1» <span class="arrow">→</span> блок снова виден.</div></div></label>
+</div>
+
+<div class="check-group">
+  <h3>Страница нового контакта</h3>
+  <label class="check"><input type="checkbox"><div><div class="sc">Новый контакт на дальней странице<span class="auto">автотест</span></div><div class="st">Добавить «Яна Яковлева» <span class="arrow">→</span> открыта не 1-я, а та страница, где она по алфавиту; её номер выделен, строка подсвечена и видна на экране, уведомление «Контакт «Яна Яковлева» добавлен».</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Обновил после добавления<span class="auto">автотест</span></div><div class="st">Сразу после этого обновить страницу <span class="arrow">→</span> та же страница, уведомления больше нет.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Новый контакт на первой странице<span class="auto">автотест</span></div><div class="st">Добавить «Аарон Абрамов» <span class="arrow">→</span> 1-я страница, контакт подсвечен, есть уведомление — как раньше.</div></div></label>
+  <label class="check"><input type="checkbox"><div><div class="sc">Чужой или несуществующий контакт в адресе<span class="auto">автотест</span></div><div class="st">Открыть <code>/?added=999999</code> <span class="arrow">→</span> 1-я страница, ничего не подсвечено, уведомления нет. Случай с чужим контактом проверяет автотест: номер чужого контакта руками не узнать.</div></div></label>
+</div>
+
+<!-- 6 -->
+<h2><span class="num">5</span>Что агент решил сам</h2>
+<p class="small muted">Решили вы: 100 на странице; внизу и переключатель, и «Загрузить ещё»; подгруженное остаётся после «Назад» и обновления; новый контакт открывается на своей странице; блоки — только на первой странице. Ниже — что решено без вас.</p>
+<div class="two">
+  <div class="card box">
+    <h3>Продуктовые — стоит просмотреть</h3>
+    <ul class="points small">
+      <li>«Загрузить ещё» стоит над переключателем, обе внизу окна «контакты.exe». Пока грузится — значок загрузки на кнопке.</li>
+      <li>Видны первая, последняя, открытые и по одной соседней странице, между ними «…». На телефоне соседних номеров нет.</li>
+      <li>Крайние стрелки не прячутся, а становятся неактивными.</li>
+      <li>Номер открывает только свою страницу, сверху — даже если были подгружены несколько.</li>
+      <li>Вид адреса: <code>/?page=2</code>, после подгрузки <code>/?page=3&amp;to=4</code>.</li>
+      <li>Номер больше последнего — последняя страница. Не число, ноль или минус — первая.</li>
+      <li>Заголовок буквы повторяется в начале новой страницы, но не повторяется при подгрузке.</li>
+      <li>«Все контакты» в карточке и удаление контакта ведут на первую страницу, как сейчас.</li>
+      <li>Счётчик над списком не меняется.</li>
+    </ul>
+  </div>
+  <div class="card box">
+    <h3>Технические — на экраны не влияют</h3>
+    <ul class="points small">
+      <li>Что открыто, хранит только адрес. Страница собирается на сервере, браузер ничего не запоминает сам.</li>
+      <li>«Загрузить ещё» — это ссылка. Сервер заново отдаёт весь открытый кусок, браузер дорисовывает новые строки. Поэтому нет дублей и пропусков, буквы не повторяются, и всё работает даже с выключенным JavaScript.</li>
+      <li>Цена: каждое нажатие пересылает всё открытое заново. При 1000 контактах это немного.</li>
+      <li>База отдаёт только нужный кусок и отдельно считает, сколько найдено.</li>
+      <li>Место нового контакта база считает в том же порядке, что и список.</li>
+      <li>На 2-й и дальше страницах данные для блоков даже не запрашиваются.</li>
+      <li>Переключатель собран из готовой кнопки shadcn/ui (библиотеки элементов интерфейса, уже стоит в проекте). Новых библиотек нет.</li>
+      <li>Если контакт добавили в другом браузере между переходами по страницам, соседние страницы сдвинутся на одну строку. Внутри открытого куска дублей не бывает.</li>
+      <li>Выкатка обычная, без миграции. Откат — галочкой «откат» в Deploy prod.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 7 -->
+<h2><span class="num">6</span>Что осталось неясным</h2>
+<div class="card">
+  <div class="qa">
+    <p><b>Поправить критерий успеха в продуктовой идее?</b></p>
+    <p class="small">В <code>specs/01-продуктовая-идея.md</code> написано «открыл → видно список всех контактов». Когда контактов больше 100, сразу видны первые 100, остальные — на следующих страницах.</p>
+  </div>
+  <div class="qa">
+    <p><b>Нужна ли подпись «Показаны 101–200 из 1 000» у переключателя?</b></p>
+    <p class="small">Сейчас её нет.</p>
+  </div>
+  <div class="qa">
+    <p><b>Должна ли «Все контакты» в карточке возвращать на ту страницу, с которой пришли?</b></p>
+    <p class="small">Сейчас нет: ведёт на первую. Вернуться на ту же страницу можно кнопкой «Назад» браузера.</p>
+  </div>
+  <div class="qa">
+    <p><b>Нашлось при обзоре: неточность в дизайне про телефон</b> <span class="auto only">техническое</span></p>
+    <p class="small">По правилам из <code>design.md</code> соседний номер может одновременно закрывать пропуск у первой или последней страницы. На телефоне соседние номера скрыты, поэтому на 3-й странице получится «1 3 … 10» вместо «1 … 3 … 10». В строке с 5-й страницей, которую описывает спека, всё верно. Предлагаю поправить правило в дизайне и добавить этот случай в unit-тесты задачи 1.2 до реализации. Ваших решений это не меняет.</p>
+  </div>
+</div>
+
+<footer>Собрано по <code>openspec/changes/paging/</code> (proposal, specs, design, tasks). Кода ещё нет. Страница только показывает, ничего не меняет.</footer>
+</div>
+</body>
+</html>

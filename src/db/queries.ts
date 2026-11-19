@@ -48,8 +48,16 @@ function groupsCondition(groupIds: number[]): SQL | undefined {
   );
 }
 
-export async function listContacts(ownerId: string, query = "", groupIds: number[] = []) {
-  return getDb()
+// The contacts of the owner in the order of the list. With `part` only that part of the list is
+// read: `offset` contacts are skipped and at most `limit` taken. The order never depends on the
+// part, so the parts follow one another without repeats and gaps.
+export async function listContacts(
+  ownerId: string,
+  query = "",
+  groupIds: number[] = [],
+  part?: { offset: number; limit: number },
+) {
+  const list = getDb()
     .select({
       id: contacts.id,
       name: contacts.name,
@@ -61,17 +69,42 @@ export async function listContacts(ownerId: string, query = "", groupIds: number
     .where(
       and(eq(contacts.ownerId, ownerId), nameSearchCondition(query), groupsCondition(groupIds)),
     )
-    .orderBy(nameOrder, contacts.id);
+    .orderBy(nameOrder, contacts.id)
+    .$dynamic();
+  return part ? list.limit(part.limit).offset(part.offset) : list;
 }
 
 export type ContactListItem = Awaited<ReturnType<typeof listContacts>>[number];
 
-export async function countContacts(ownerId: string) {
+// How many contacts the list has for this search and these groups: all of them without both
+export async function countContacts(ownerId: string, query = "", groupIds: number[] = []) {
   const [row] = await getDb()
     .select({ total: count() })
     .from(contacts)
-    .where(eq(contacts.ownerId, ownerId));
+    .where(
+      and(eq(contacts.ownerId, ownerId), nameSearchCondition(query), groupsCondition(groupIds)),
+    );
   return row.total;
+}
+
+// The place of the contact in the whole list of the owner (no search, no groups), from 1; null if
+// there is no such contact or it is not his. The place is counted by the same order as the list.
+export async function contactListPosition(ownerId: string, contactId: number) {
+  const ranked = getDb()
+    .select({
+      id: contacts.id,
+      position: sql<number>`(row_number() over (order by ${nameOrder}, ${contacts.id}))::int`.as(
+        "position",
+      ),
+    })
+    .from(contacts)
+    .where(eq(contacts.ownerId, ownerId))
+    .as("ranked");
+  const [row] = await getDb()
+    .select({ position: ranked.position })
+    .from(ranked)
+    .where(eq(ranked.id, contactId));
+  return row?.position ?? null;
 }
 
 // Cached per request: the page and its metadata both read the same contact.

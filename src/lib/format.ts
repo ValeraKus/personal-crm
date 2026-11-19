@@ -21,6 +21,15 @@ export function formatFoundCount(found: number, total: number) {
   return `Найдено: ${found.toLocaleString("ru-RU")} из ${total.toLocaleString("ru-RU")} ${contactWord}`;
 }
 
+// The caption under the page switcher: "Показаны 101–200 из 1 000". `total` is the number of
+// contacts of the list: all of them, or the found ones while a search or a group is on.
+// A single contact is named by its number: "Показан 101-й из 101".
+export function formatShownRange(from: number, to: number, total: number) {
+  const count = total.toLocaleString("ru-RU");
+  if (from === to) return `Показан ${from.toLocaleString("ru-RU")}-й из ${count}`;
+  return `Показаны ${from.toLocaleString("ru-RU")}–${to.toLocaleString("ru-RU")} из ${count}`;
+}
+
 const noteDateFormat = new Intl.DateTimeFormat("ru-RU", {
   day: "numeric",
   month: "long",

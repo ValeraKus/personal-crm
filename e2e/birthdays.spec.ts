@@ -17,7 +17,7 @@ import {
   type BirthdaySeed,
 } from "./dates";
 import { expect, test } from "./fixtures";
-import { countContacts, insertContact, insertGroup } from "./test-database";
+import { countContacts, insertContact, insertGroup, insertNumberedContacts } from "./test-database";
 
 // Color of the design token --color-butter in src/styles/tokens.css, as the browser reports it
 const BUTTER = "rgb(255, 244, 176)";
@@ -470,5 +470,50 @@ test("birthdays block: who is in it, the rows, the order, the card, the date set
     await expect(page).toHaveURL(/group=/);
     await expect(listLink(page, "Мила Из Группы")).toBeVisible();
     await expect(birthdaysBlock(page)).toHaveCount(0);
+  });
+});
+
+// The block is only over the first page of the list. Scenarios «Вторая страница списка»,
+// «Подгрузил к первой странице» and «Вернулся на первую страницу» of the requirement
+// «Когда блок «Скоро день рождения» скрыт» in openspec/changes/paging/specs/birthdays/spec.md.
+// 250 contacts make three pages; one more has a birthday in two days and stands on the first page.
+async function birthdayAmongMany() {
+  await insertNumberedContacts(250);
+  await addBirthdayContact("Анна Скоро", 2, 30);
+}
+
+function listRows(page: Page) {
+  return page.getByRole("region", { name: /^На букву/ }).getByRole("listitem");
+}
+
+test("birthdays block over the pages: only on the first page, also with more loaded to it", async ({
+  page,
+}) => {
+  await birthdayAmongMany();
+
+  await test.step("«Вторая страница списка»: no block", async () => {
+    await page.goto("/");
+    await expect(birthdayRows(page)).toHaveCount(1);
+
+    await page.goto("/?page=2");
+
+    await expect(listRows(page)).toHaveCount(100);
+    await expect(birthdaysBlock(page)).toHaveCount(0);
+  });
+
+  await test.step("«Вернулся на первую страницу»: the block is back", async () => {
+    await page
+      .getByRole("navigation", { name: "Страницы" })
+      .getByRole("link", { name: "Страница 1" })
+      .click();
+
+    await expect(birthdayRows(page)).toHaveCount(1);
+  });
+
+  await test.step("«Подгрузил к первой странице»: the block stays", async () => {
+    await page.getByRole("link", { name: "Загрузить ещё" }).click();
+
+    await expect(listRows(page)).toHaveCount(200);
+    await expect(birthdayRows(page)).toHaveCount(1);
   });
 });

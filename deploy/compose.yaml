@@ -7,12 +7,11 @@
 # from lib.sh by the environment, so docker compose is run only through the scripts and ./compose.sh.
 # The app image of the current release is set in compose.override.yaml, which deploy.sh writes;
 # docker compose merges it in automatically.
-
-x-logging: &logging
-  driver: json-file
-  options:
-    max-size: 10m
-    max-file: "3"
+# Logs of all three go to the server journal (journald), so they survive a deploy, a rollback and a
+# recreated container; journald itself limits the size of the journal and drops the oldest lines.
+# Each service writes under the tag <environment>-<service> (COMPOSE_PROJECT_NAME is the environment,
+# lib.sh passes it with -p), the same for every container of that service:
+#   sudo journalctl -t prod-app -n 100
 
 x-app-environment: &app-environment
   DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is not set in .env}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set in .env}@db:5432/${POSTGRES_DB:?POSTGRES_DB is not set in .env}
@@ -49,7 +48,10 @@ services:
     # Memory limits: the server is small and shared by both environments and the landing,
     # so no container can take the memory of the others
     mem_limit: 256m
-    logging: *logging
+    logging:
+      driver: journald
+      options:
+        tag: ${COMPOSE_PROJECT_NAME}-db
 
   migrate:
     # Started only explicitly: docker compose run --rm migrate
@@ -61,7 +63,10 @@ services:
       db:
         condition: service_healthy
     mem_limit: 256m
-    logging: *logging
+    logging:
+      driver: journald
+      options:
+        tag: ${COMPOSE_PROJECT_NAME}-migrate
 
   app:
     restart: unless-stopped
@@ -78,7 +83,10 @@ services:
       retries: 3
       start_period: 30s
     mem_limit: 384m
-    logging: *logging
+    logging:
+      driver: journald
+      options:
+        tag: ${COMPOSE_PROJECT_NAME}-app
 
 volumes:
   db-data:

@@ -3,13 +3,16 @@ import Link from "next/link";
 import { AddedContactNotice } from "@/components/added-contact-notice";
 import { BirthdaysBlock } from "@/components/birthdays-block";
 import { ContactAvatar } from "@/components/contact-avatar";
+import { ContactListPager } from "@/components/contact-list-pager";
 import { ContactSearch } from "@/components/contact-search";
 import { KeepInTouchBlock } from "@/components/keep-in-touch-block";
 import { PixelIcon } from "@/components/pixel-icon";
+import { RememberContactList } from "@/components/remember-contact-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Window } from "@/components/window";
 import {
+  contactListPosition,
   countContacts,
   listContacts,
   listContactsWithBirthday,
@@ -27,6 +30,7 @@ import {
 } from "@/lib/group-filter";
 import { parseContactId } from "@/lib/ids";
 import { overdueContacts } from "@/lib/keep-in-touch";
+import { CONTACTS_PAGE_SIZE, parsePageRange } from "@/lib/paging";
 import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
@@ -58,22 +62,45 @@ async function listUpcomingBirthdays(ownerId: string) {
 export default async function ContactsPage({ searchParams }: PageProps<"/">) {
   const user = await requireUser();
   const params = await searchParams;
-  const query = typeof params.q === "string" ? params.q.trim() : "";
   const addedId = parseContactId(params.added);
 
-  const allGroups = await listGroups(user.id);
-  const selectedIds = selectedGroupIds(params.group, allGroups);
+  const [allGroups, addedPosition] = await Promise.all([
+    listGroups(user.id),
+    addedId === null ? null : contactListPosition(user.id, addedId),
+  ]);
+  // A contact was just added: the whole list opens on the page where it stands, whatever else the
+  // address says. The number of somebody else's contact or of a missing one gives no place.
+  const opensAdded = addedPosition !== null;
+  const query = !opensAdded && typeof params.q === "string" ? params.q.trim() : "";
+  const selectedIds = opensAdded ? [] : selectedGroupIds(params.group, allGroups);
   const filtered = query !== "" || selectedIds.length > 0;
 
-  // The blocks are hidden while searching or filtering, so their queries are skipped too
-  const [items, total, overdue, birthdays] = await Promise.all([
-    listContacts(user.id, query, selectedIds),
+  // How many contacts the list has: all of them, or the found ones. It says how many pages there
+  // are, so it is read before the part of the list.
+  const [total, foundCount] = await Promise.all([
     countContacts(user.id),
-    filtered ? [] : listOverdueContacts(user.id),
-    filtered ? [] : listUpcomingBirthdays(user.id),
+    filtered ? countContacts(user.id, query, selectedIds) : null,
+  ]);
+  const found = foundCount ?? total;
+  const pages = opensAdded
+    ? parsePageRange(String(Math.ceil(addedPosition / CONTACTS_PAGE_SIZE)), undefined, found)
+    : parsePageRange(params.page, params.to, found);
+
+  // The blocks are hidden while searching or filtering and over every page but the first, so their
+  // queries are skipped too
+  const hideBlocks = filtered || pages.first > 1;
+  const [items, overdue, birthdays] = await Promise.all([
+    listContacts(user.id, query, selectedIds, {
+      offset: (pages.first - 1) * CONTACTS_PAGE_SIZE,
+      limit: (pages.last - pages.first + 1) * CONTACTS_PAGE_SIZE,
+    }),
+    hideBlocks ? [] : listOverdueContacts(user.id),
+    hideBlocks ? [] : listUpcomingBirthdays(user.id),
   ]);
   const groups = groupByLetter(items);
-  const added = addedId === null ? undefined : items.find((item) => item.id === addedId);
+  // The address of what is shown now: «Все контакты» in this tab leads back to it
+  const listHref = contactListHref(query, selectedIds, pages);
+  const added = opensAdded ? items.find((item) => item.id === addedId) : undefined;
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
@@ -81,7 +108,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/">) {
         <div className="flex flex-col gap-3">
           <h1 className="font-display text-30 leading-heading uppercase sm:text-44">Контакты</h1>
           <p className="font-pixel text-9 text-ink-faint sm:text-10" aria-live="polite">
-            {filtered ? formatFoundCount(items.length, total) : formatContactCount(total)}
+            {filtered ? formatFoundCount(found, total) : formatContactCount(total)}
           </p>
         </div>
         <Button asChild size="lg" className="w-full sm:w-auto">
@@ -146,9 +173,24 @@ export default async function ContactsPage({ searchParams }: PageProps<"/">) {
             </section>
           ))
         )}
+
+        {pages.pageCount > 1 ? (
+          <ContactListPager
+            query={query}
+            groupIds={selectedIds}
+            first={pages.first}
+            last={pages.last}
+            pageCount={pages.pageCount}
+            found={found}
+          />
+        ) : null}
       </Window>
 
-      {added ? <AddedContactNotice contactId={added.id} name={added.name} /> : null}
+      <RememberContactList href={listHref} />
+
+      {added ? (
+        <AddedContactNotice contactId={added.id} name={added.name} listHref={listHref} />
+      ) : null}
     </div>
   );
 }

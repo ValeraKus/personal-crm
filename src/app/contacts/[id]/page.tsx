@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { addNote, deleteContact } from "@/app/actions";
-import { BackLink } from "@/components/back-link";
+import { ContactListBackLink } from "@/components/contact-list-back-link";
 import { ContactAvatar } from "@/components/contact-avatar";
 import { DeleteContactButton } from "@/components/delete-contact-button";
 import { MarkContactedButton } from "@/components/mark-contacted-button";
@@ -63,7 +63,7 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
 
   return (
     <div className="flex flex-col gap-4 sm:gap-5">
-      <BackLink href="/">Все контакты</BackLink>
+      <ContactListBackLink />
 
       <Window title="карточка" bar="butter" controls={2}>
         <div className="flex items-start gap-4 p-4 sm:gap-5 sm:p-6">

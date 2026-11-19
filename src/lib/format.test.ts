@@ -13,6 +13,7 @@ import {
   formatFoundCount,
   formatGroupDeletion,
   formatOverdue,
+  formatShownRange,
 } from "@/lib/format";
 
 // Texts of the term from openspec/specs/keep-in-touch/spec.md: the overdue days in the home block
@@ -81,6 +82,27 @@ describe("formatFoundCount", () => {
     [1, 1000, "Найдено: 1 из 1\u00a0000 контактов"],
   ])("shows %i found of %i contacts", (found, total, text) => {
     expect(formatFoundCount(found, total)).toBe(text);
+  });
+});
+
+// The caption under the page switcher, "Подпись «Показаны … из …»" in
+// openspec/changes/paging/specs/contact-list-paging/spec.md
+describe("formatShownRange", () => {
+  it.each([
+    [1, 100, 250, "Показаны 1–100 из 250"],
+    [201, 250, 250, "Показаны 201–250 из 250"],
+    [201, 400, 1000, "Показаны 201–400 из 1\u00a0000"],
+    [101, 150, 150, "Показаны 101–150 из 150"],
+    [901, 1000, 1000, "Показаны 901–1\u00a0000 из 1\u00a0000"],
+  ])("shows %i to %i of %i", (from, to, total, text) => {
+    expect(formatShownRange(from, to, total)).toBe(text);
+  });
+
+  it.each([
+    [101, 101, 101, "Показан 101-й из 101"],
+    [1001, 1001, 1001, "Показан 1\u00a0001-й из 1\u00a0001"],
+  ])("names the only contact on the page: %i of %i", (from, to, total, text) => {
+    expect(formatShownRange(from, to, total)).toBe(text);
   });
 });
 

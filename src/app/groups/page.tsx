@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { BackLink } from "@/components/back-link";
+import { ContactListBackLink } from "@/components/contact-list-back-link";
 import { GroupRow } from "@/components/group-row";
 import { Window } from "@/components/window";
 import { listGroupsWithCounts } from "@/db/queries";
@@ -19,7 +19,7 @@ export default async function GroupsPage() {
 
   return (
     <div className="flex flex-col gap-4 sm:gap-5">
-      <BackLink href="/">Все контакты</BackLink>
+      <ContactListBackLink />
       <h1 className="font-display text-26 leading-heading uppercase sm:text-38">Группы</h1>
       <Window title="группы.exe" bar="lilac" controls={3} className="mt-2">
         {groups.length === 0 ? (

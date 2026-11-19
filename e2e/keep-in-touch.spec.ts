@@ -7,7 +7,7 @@ import { type Page } from "@playwright/test";
 
 import { addDays, addMonths, daysAgo, dueDateText, noteDayText, today } from "./dates";
 import { expect, test } from "./fixtures";
-import { countContacts, insertContact } from "./test-database";
+import { countContacts, insertContact, insertNumberedContacts } from "./test-database";
 
 // Colors of the design tokens in src/styles/tokens.css, as the browser reports them
 const ACCENT_PINK = "rgb(255, 143, 199)"; // --color-accent
@@ -414,5 +414,50 @@ test("start of the term of a contact without notes when the form is saved", asyn
     await expect(termRow(page)).toContainText(
       `Раз в 14 дней · связаться до ${dueDateText(addDays(today(), 14))}`,
     );
+  });
+});
+
+// The block is only over the first page of the list. Scenarios «Вторая страница списка»,
+// «Подгрузил к первой странице» and «Вернулся на первую страницу» of the requirement
+// «Когда блок скрыт» in openspec/changes/paging/specs/keep-in-touch/spec.md.
+// 250 contacts make three pages; one more contact is overdue and stands on the first page.
+async function overdueContactAmongMany() {
+  await insertNumberedContacts(250);
+  await insertContact({ name: "Анна Просрочена", frequency: "week", since: daysAgo(10) });
+}
+
+function listRows(page: Page) {
+  return page.getByRole("region", { name: /^На букву/ }).getByRole("listitem");
+}
+
+test("keep-in-touch block over the pages: only on the first page, also with more loaded to it", async ({
+  page,
+}) => {
+  await overdueContactAmongMany();
+
+  await test.step("«Вторая страница списка»: no block", async () => {
+    await page.goto("/");
+    await expect(blockRows(page)).toHaveCount(1);
+
+    await page.goto("/?page=2");
+
+    await expect(listRows(page)).toHaveCount(100);
+    await expect(keepInTouchBlock(page)).toHaveCount(0);
+  });
+
+  await test.step("«Вернулся на первую страницу»: the block is back", async () => {
+    await page
+      .getByRole("navigation", { name: "Страницы" })
+      .getByRole("link", { name: "Страница 1" })
+      .click();
+
+    await expect(blockRows(page)).toHaveCount(1);
+  });
+
+  await test.step("«Подгрузил к первой странице»: the block stays", async () => {
+    await page.getByRole("link", { name: "Загрузить ещё" }).click();
+
+    await expect(listRows(page)).toHaveCount(200);
+    await expect(blockRows(page)).toHaveCount(1);
   });
 });

@@ -24,6 +24,7 @@ import {
   updateContact,
 } from "./mutations";
 import {
+  contactListPosition,
   countContacts,
   getContact,
   listContactGroups,
@@ -137,6 +138,25 @@ describe("reads show only the data of their owner", () => {
     await getDb().insert(contacts).values({ ownerId: w.a, name: "Ещё один" });
     expect(await countContacts(w.a)).toBe(2);
     expect(await countContacts(w.b)).toBe(1);
+  });
+
+  it("listContacts, countContacts: a part of the list and the found number, with a search and groups", async () => {
+    const part = { offset: 0, limit: 100 };
+    expect((await listContacts(w.b, "", [], part)).map((c) => c.name)).toEqual(["Борис"]);
+    expect(await listContacts(w.b, "Анна", [], part)).toEqual([]);
+    expect(await listContacts(w.b, "", [w.groupA], part)).toEqual([]);
+    expect(await countContacts(w.b, "Анна")).toBe(0);
+    expect(await countContacts(w.b, "", [w.groupA])).toBe(0);
+    // The found number of one's own contacts does not grow with the contacts of the other user
+    expect(await countContacts(w.a, "а")).toBe(1);
+  });
+
+  it("contactListPosition: the place of somebody else's contact is not given, like for a missing one", async () => {
+    expect(await contactListPosition(w.a, w.contactA)).toBe(1);
+    expect(await contactListPosition(w.b, w.contactA)).toBeNull();
+    expect(await contactListPosition(w.b, 999_999)).toBeNull();
+    // The place counts only the contacts of the owner: «Борис» of B is the first one of B too
+    expect(await contactListPosition(w.b, w.contactB)).toBe(1);
   });
 
   it("getContact: a card of somebody else's contact is not found, like a missing one", async () => {

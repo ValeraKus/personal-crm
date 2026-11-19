@@ -13,11 +13,18 @@ export function toggleGroupId(selectedIds: number[], id: number) {
     : [...selectedIds, id];
 }
 
-// Address of the contact list with this search and this choice of groups
-export function contactListHref(query: string, groupIds: number[]) {
+// Address of the contact list with this search, this choice of groups and these open pages.
+// Without pages, or with the first page alone, the address names no page: that is the first page.
+export function contactListHref(
+  query: string,
+  groupIds: number[],
+  pages?: { first: number; last: number },
+) {
   const params = new URLSearchParams();
   if (query) params.set("q", query);
   for (const id of groupIds) params.append("group", String(id));
+  if (pages && pages.first > 1) params.set("page", String(pages.first));
+  if (pages && pages.last > pages.first) params.set("to", String(pages.last));
   const search = params.toString();
   return search ? `/?${search}` : "/";
 }

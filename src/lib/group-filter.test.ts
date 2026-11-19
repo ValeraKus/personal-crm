@@ -48,6 +48,41 @@ describe("contactListHref", () => {
     expect(search.get("q")).toBe("Иван");
     expect(search.getAll("group")).toEqual([]);
   });
+
+  // "Страница в адресе" in openspec/changes/paging/specs/contact-list-paging/spec.md
+  describe("with open pages", () => {
+    it("is the plain list for the first page alone", () => {
+      expect(contactListHref("", [], { first: 1, last: 1 })).toBe("/");
+    });
+
+    it("has no page parameters without a range", () => {
+      expect(contactListHref("Иван", [3])).toBe(contactListHref("Иван", [3], undefined));
+      expect(contactListHref("Иван", [3])).not.toContain("page");
+    });
+
+    it("names the page of a single open page", () => {
+      expect(contactListHref("", [], { first: 2, last: 2 })).toBe("/?page=2");
+    });
+
+    it("names the last page too after more pages were loaded", () => {
+      expect(contactListHref("", [], { first: 3, last: 4 })).toBe("/?page=3&to=4");
+    });
+
+    it("names the pages loaded to the first page", () => {
+      // The first page is the default, but "to" must still say how far the list goes
+      expect(contactListHref("", [], { first: 1, last: 2 })).toBe("/?to=2");
+    });
+
+    it("keeps the search and the groups together with the page", () => {
+      const search = new URLSearchParams(
+        contactListHref("Иван", [3, 7], { first: 3, last: 4 }).slice(2),
+      );
+      expect(search.get("q")).toBe("Иван");
+      expect(search.getAll("group")).toEqual(["3", "7"]);
+      expect(search.get("page")).toBe("3");
+      expect(search.get("to")).toBe("4");
+    });
+  });
 });
 
 describe("selectedGroupIds", () => {
